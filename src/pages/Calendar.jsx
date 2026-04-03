@@ -83,7 +83,18 @@ export default function Calendar() {
         }
         return
       }
-      toast.success('Evento creado')
+
+      // Send webhook to n8n to generate Meet link and email
+      try {
+        await fetch('https://automation8n.fluxia.site/webhook/e64e181f-b3f4-4e02-b6c3-6c5f126a39ab', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        toast.success('Reunión agendada y disparada a n8n')
+      } catch (err) {
+         console.error('Error n8n webhook', err)
+      }
     }
 
     setShowEventModal(false)

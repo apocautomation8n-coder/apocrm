@@ -1,0 +1,75 @@
+==============================================================
+GUIA DEFINITIVA: CONECTAR n8n Y EL CRM APOC AUTOMATION
+==============================================================
+
+Estas son las tres rutas (endpoints) que vas a usar en tus nodos de n8n para que Evolution API hable ida y vuelta con tu CRM en Vercel.
+
+Recuerda reemplazar "https://apoc-crm.vercel.app" con el dominio verde final que te dio tu Vercel si es distinto.
+
+--------------------------------------------------------------
+1. INBOUND (n8n -> CRM) | "Recibir los mensajes del cliente"
+--------------------------------------------------------------
+* Uso: Un nodo HTTP Request al principio de tu flujo de n8n o conectado al webhook de Evolution que lee los WhatsApp ingresantes. Esto logra que los mensajes aparezcan en tu Panel de Chat del CRM para los humanos.
+* Método: POST
+* URL: https://apoc-crm.vercel.app/api/messages/inbound
+* JSON Body:
+{
+  "phone": "{{ El número del cliente que manda mensaje }}",
+  "name": "{{ Nombre del cliente }}",
+  "agent_slug": "gym", // (puede ser 'gym', 'clinicas' o 'talleres' según corresponda)
+  "message": "{{ El texto que mandó el cliente }}"
+}
+
+--------------------------------------------------------------
+2. ROUTER / STATUS (n8n -> CRM) | "Permiso para la IA"
+--------------------------------------------------------------
+* Uso: Un nodo HTTP Request tipo GET, que ponés ANTES del nodo de OpenAI / ChatGPT. Te dice si el bot está prendido o apagado en el CRM.
+* Método: GET
+* URL: https://apoc-crm.vercel.app/api/agents/status?phone={{numero_del_cliente}}
+
+* Cómo se lee desde n8n:
+Vas a poner un IF o Switch que lea de este nodo el parámetro "bot_enabled". 
+- Si da TRUE: Pasa la IA a responder.
+- Si da FALSE: Terminás el flujo y no contestás.
+
+--------------------------------------------------------------
+3. BOT OUTBOUND LOG (n8n -> CRM) | "Que el humano lea a la IA"
+--------------------------------------------------------------
+* Uso: Justo DESPUÉS de que el nodo de OpenAI responda y dispare el mensaje al cliente final, mandá este webhook para registrar en el CRM qué le dijo tu IA, así los humanos leen el contexto completo de la conversación.
+* Método: POST
+* URL: https://apoc-crm.vercel.app/api/messages/bot-outbound
+* JSON Body:
+{
+  "phone": "{{ El número del cliente }}",
+  "agent_slug": "gym", 
+  "message": "{{ Lo que redactó ChatGPT }}"
+}
+
+--------------------------------------------------------------
+4. OUTBOUND HUMANOS (CRM -> n8n) | "Escribir desde el CRM"
+--------------------------------------------------------------
+* Uso: Para que vos puedas contestar. En tu Panel de Vercel configuraste la variable "VITE_N8N_WEBHOOK". Esa URL tiene que apuntar a un Webhook Receptor en n8n.
+* Lo que reciba tu n8n ahí, va y se lo pasás al nodo de mandar de Evolution API.
+* Qué paquete te llega desde el CRM:
+{
+  "phone": "5491100...",
+  "agent_slug": "gym",
+  "message": "Hola, te habla un agente humano...",
+  "media_type": "text"
+}
+
+==============================================================
+CALENDARIO & MEET
+==============================================================
+* Configuración nueva de hoy:
+Ahora el botón de "Crear" evento en el Calendario del CRM contacta automáticamente con tu webhook en Fluxia (https://automation8n.fluxia.site/webhook/e64e181f-b3f4-4e02-b6c3-6c5f126a39ab).
+
+El CRM te dispara ahí el siguiente JSON para que vos generes el Meet y dispares el mail por n8n:
+{
+  "title": "Reunión de Ventas",
+  "date": "2024-10-15",
+  "start_time": "14:00",
+  "end_time": "15:00",
+  "description": "Demo por videollamada",
+  "guests": "cliente@ventas.com"
+}
