@@ -80,15 +80,26 @@ router.post('/bot-outbound', async (req, res) => {
       return res.status(400).json({ error: 'phone and agent_slug are required' })
     }
 
-    // 1. Find contact
-    const { data: contact } = await supabase
+    // 1. Find or create contact
+    let { data: contact } = await supabase
       .from('contacts')
       .select('id')
       .eq('phone', phone)
       .single()
 
     if (!contact) {
-      return res.status(404).json({ error: 'Contact not found. Bot outbound messages expect an existing contact.' })
+      console.log(`Bot outbound: Contact not found for ${phone}, creating new one.`)
+      const { data: newContact, error: contactErr } = await supabase
+        .from('contacts')
+        .insert({ name: null, phone })
+        .select('id')
+        .single()
+      
+      if (contactErr) {
+        console.error('Error creating contact for bot message:', contactErr)
+        return res.status(500).json({ error: 'Failed to create contact' })
+      }
+      contact = newContact
     }
 
     // 2. Find agent by slug

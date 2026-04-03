@@ -36,6 +36,7 @@ Vas a poner un IF o Switch que lea de este nodo el parámetro "bot_enabled".
 3. BOT OUTBOUND LOG (n8n -> CRM) | "Que el humano lea a la IA"
 --------------------------------------------------------------
 * Uso: Justo DESPUÉS de que el nodo de OpenAI responda y dispare el mensaje al cliente final, mandá este webhook para registrar en el CRM qué le dijo tu IA, así los humanos leen el contexto completo de la conversación.
+* NOTA: Este endpoint ahora CREA el contacto automáticamente si no existe, por lo que no fallará si es la primera vez que el bot le escribe a ese número.
 * Método: POST
 * URL: https://apoc-crm.vercel.app/api/messages/bot-outbound
 * JSON Body:
@@ -46,7 +47,19 @@ Vas a poner un IF o Switch que lea de este nodo el parámetro "bot_enabled".
 }
 
 --------------------------------------------------------------
-4. OUTBOUND HUMANOS (CRM -> n8n) | "Escribir desde el CRM"
+4. CREAR/ACTUALIZAR CONTACTO (n8n -> CRM) | "Gestión de Leads"
+--------------------------------------------------------------
+* Uso: Si querés registrar un contacto manualmente o actualizar su nombre desde n8n antes de disparar otras acciones.
+* Método: POST
+* URL: https://apoc-crm.vercel.app/api/contacts
+* JSON Body:
+{
+  "phone": "+54911...",
+  "name": "Nombre Opcional"
+}
+
+--------------------------------------------------------------
+5. OUTBOUND HUMANOS (CRM -> n8n) | "Escribir desde el CRM"
 --------------------------------------------------------------
 * Uso: Para que vos puedas contestar. En tu Panel de Vercel configuraste la variable "VITE_N8N_WEBHOOK". Esa URL tiene que apuntar a un Webhook Receptor en n8n.
 * Lo que reciba tu n8n ahí, va y se lo pasás al nodo de mandar de Evolution API.
@@ -61,7 +74,7 @@ Vas a poner un IF o Switch que lea de este nodo el parámetro "bot_enabled".
 ==============================================================
 CALENDARIO & MEET
 ==============================================================
-* Configuración nueva de hoy:
+* Configuración nueva:
 Ahora el botón de "Crear" evento en el Calendario del CRM contacta automáticamente con tu webhook en Fluxia (https://automation8n.fluxia.site/webhook/e64e181f-b3f4-4e02-b6c3-6c5f126a39ab).
 
 El CRM te dispara ahí el siguiente JSON para que vos generes el Meet y dispares el mail por n8n:
