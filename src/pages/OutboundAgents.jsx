@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAgents, useConversations } from '../hooks/useMessages'
+import { useAgents, useConversations, deleteConversationByContact } from '../hooks/useMessages'
 import { useRealtime } from '../hooks/useRealtime'
 import ConversationList from '../components/chat/ConversationList'
 import ChatWindow from '../components/chat/ChatWindow'
@@ -43,6 +43,20 @@ export default function OutboundAgents() {
     setShowAddAgent(false)
     setNewAgentName('')
     setNewAgentSlug('')
+  }
+
+  const handleDeleteConversation = async (contactId) => {
+    if (!confirm('¿Estás seguro de que quieres borrar todos los mensajes de esta conversación? Esta acción no se puede deshacer.')) return
+    
+    try {
+      await deleteConversationByContact(activeAgent.id, contactId)
+      if (selectedContact?.id === contactId) {
+        setSelectedContact(null)
+      }
+      refetch()
+    } catch (err) {
+      console.error('Error deleting conversation:', err)
+    }
   }
 
   if (agentsLoading) {
@@ -128,6 +142,7 @@ export default function OutboundAgents() {
             conversations={filteredConversations}
             selectedContactId={selectedContact?.id}
             onSelect={setSelectedContact}
+            onDelete={handleDeleteConversation}
             loading={convsLoading}
           />
         </div>

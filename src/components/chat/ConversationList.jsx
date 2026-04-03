@@ -1,7 +1,8 @@
+import { Trash2 } from 'lucide-react'
 import { format, isToday, isYesterday } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-export default function ConversationList({ conversations, selectedContactId, onSelect, loading }) {
+export default function ConversationList({ conversations, selectedContactId, onSelect, onDelete, loading }) {
   const formatTime = (timestamp) => {
     const date = new Date(timestamp)
     if (isToday(date)) return format(date, 'HH:mm')
@@ -28,49 +29,62 @@ export default function ConversationList({ conversations, selectedContactId, onS
   return (
     <div className="flex-1 overflow-y-auto">
       {conversations.map((conv) => (
-        <button
-          key={conv.contact?.id}
-          onClick={() => onSelect(conv.contact)}
-          className={`
-            w-full flex items-center gap-3 px-4 py-3.5
-            border-b border-surface-800/40 cursor-pointer
-            transition-all duration-150 text-left
-            ${selectedContactId === conv.contact?.id
-              ? 'bg-primary-600/10 border-l-2 border-l-primary-500'
-              : 'hover:bg-surface-800/40 border-l-2 border-l-transparent'
-            }
-          `}
-        >
-          {/* Avatar */}
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
-            {(conv.contact?.name || conv.contact?.phone || '?')[0].toUpperCase()}
-          </div>
+        <div key={conv.contact?.id} className="relative group">
+          <button
+            onClick={() => onSelect(conv.contact)}
+            className={`
+              w-full flex items-center gap-3 px-4 py-3.5
+              border-b border-surface-800/40 cursor-pointer
+              transition-all duration-150 text-left
+              ${selectedContactId === conv.contact?.id
+                ? 'bg-primary-600/10 border-l-2 border-l-primary-500'
+                : 'hover:bg-surface-800/40 border-l-2 border-l-transparent'
+              }
+            `}
+          >
+            {/* Avatar */}
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+              {(conv.contact?.name || conv.contact?.phone || '?')[0].toUpperCase()}
+            </div>
 
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-surface-100 truncate">
-                {conv.contact?.name || conv.contact?.phone}
-              </p>
-              <span className="text-[11px] text-surface-500 ml-2 shrink-0">
-                {formatTime(conv.lastTimestamp)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between mt-0.5">
-              <p className="text-xs text-surface-400 truncate">
-                {conv.lastDirection === 'outbound' && (
-                  <span className="text-surface-500">Tú: </span>
-                )}
-                {conv.lastMessage}
-              </p>
-              {conv.unreadCount > 0 && (
-                <span className="ml-2 shrink-0 min-w-[20px] h-5 flex items-center justify-center px-1.5 text-[10px] font-bold rounded-full bg-primary-500 text-white">
-                  {conv.unreadCount}
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-surface-100 truncate">
+                  {conv.contact?.name || conv.contact?.phone}
+                </p>
+                <span className="text-[11px] text-surface-500 ml-2 shrink-0">
+                  {formatTime(conv.lastTimestamp)}
                 </span>
-              )}
+              </div>
+              <div className="flex items-center justify-between mt-0.5">
+                <p className="text-xs text-surface-400 truncate">
+                  {conv.lastDirection === 'outbound' && (
+                    <span className="text-surface-500">Tú: </span>
+                  )}
+                  {conv.lastMessage}
+                </p>
+                {conv.unreadCount > 0 && (
+                  <span className="ml-2 shrink-0 min-w-[20px] h-5 flex items-center justify-center px-1.5 text-[10px] font-bold rounded-full bg-primary-500 text-white">
+                    {conv.unreadCount}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        </button>
+          </button>
+          
+          {/* Delete button (visible on hover) */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(conv.contact?.id)
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-surface-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-10"
+            title="Borrar conversación"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       ))}
     </div>
   )

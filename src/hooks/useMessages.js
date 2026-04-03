@@ -201,6 +201,21 @@ export async function sendOutboundMessage({ phone, agentSlug, agentId, contactId
   return data
 }
 
+export async function deleteConversationByContact(agentId, contactId) {
+  const { error } = await supabase
+    .from('messages')
+    .delete()
+    .eq('agent_id', agentId)
+    .eq('contact_id', contactId)
+
+  if (error) {
+    toast.error('Error al borrar la conversación')
+    throw error
+  }
+
+  toast.success('Conversación borrada')
+}
+
 export async function uploadAudio(blob) {
   const fileName = `audio_${Date.now()}.webm`
   const { data, error } = await supabase.storage

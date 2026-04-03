@@ -56,11 +56,28 @@ export default function Contacts() {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('¿Eliminar este contacto?')) return
-    const { error } = await supabase.from('contacts').delete().eq('id', id)
-    if (error) return toast.error('Error eliminando contacto')
-    toast.success('Contacto eliminado')
-    fetchContacts()
+    if (!confirm('¿Eliminar este contacto? Al hacerlo se borrarán todos sus mensajes y datos asociados. Esta acción no se puede deshacer.')) return
+    
+    try {
+      // 1. Delete related messages
+      await supabase.from('messages').delete().eq('contact_id', id)
+      
+      // 2. Delete related pipeline cards
+      await supabase.from('pipeline_cards').delete().eq('contact_id', id)
+      
+      // 3. Delete the contact
+      const { error } = await supabase.from('contacts').delete().eq('id', id)
+      
+      if (error) {
+        throw error
+      }
+      
+      toast.success('Contacto y datos asociados eliminados')
+      fetchContacts()
+    } catch (err) {
+      console.error('Error deleting contact:', err)
+      toast.error('Error al eliminar el contacto')
+    }
   }
 
   const openEdit = (contact) => {
