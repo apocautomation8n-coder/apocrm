@@ -59,7 +59,14 @@ Vas a poner un IF o Switch que lea de este nodo el parámetro "bot_enabled".
 }
 
 --------------------------------------------------------------
-5. OUTBOUND HUMANOS (CRM -> n8n) | "Escribir desde el CRM"
+5. VERIFICAR CONTACTO (n8n -> CRM) | "Check Existence"
+--------------------------------------------------------------
+* Uso: Para saber si un contacto ya existe antes de crearlo o realizar otras acciones. Devuelve { "exists": true/false }.
+* Método: GET
+* URL: https://apoc-crm.vercel.app/api/contacts/check/{{numero_del_cliente}}
+
+--------------------------------------------------------------
+6. OUTBOUND HUMANOS (CRM -> n8n) | "Escribir desde el CRM"
 --------------------------------------------------------------
 * Uso: Para que vos puedas contestar. En tu Panel de Vercel configuraste la variable "VITE_N8N_WEBHOOK". Esa URL tiene que apuntar a un Webhook Receptor en n8n.
 * Lo que reciba tu n8n ahí, va y se lo pasás al nodo de mandar de Evolution API.

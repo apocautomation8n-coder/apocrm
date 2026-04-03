@@ -53,6 +53,22 @@ router.post('/', async (req, res) => {
   }
 })
 
+// GET /api/contacts/check/:phone — check if a contact exists (returns boolean)
+router.get('/check/:phone', async (req, res) => {
+  try {
+    const { phone } = req.params
+    const { data: contact } = await supabase
+      .from('contacts')
+      .select('id')
+      .eq('phone', phone)
+      .single()
+
+    res.json({ exists: !!contact })
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 // GET /api/contacts/:phone — find a contact by phone
 router.get('/:phone', async (req, res) => {
   try {
