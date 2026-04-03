@@ -79,7 +79,7 @@ export default function ConversationList({ conversations, selectedContactId, onS
               e.stopPropagation()
               onDelete(conv.contact?.id)
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-surface-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-10"
+            className="absolute right-2 bottom-2 p-2 rounded-lg text-surface-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-10"
             title="Borrar conversación"
           >
             <Trash2 size={14} />
