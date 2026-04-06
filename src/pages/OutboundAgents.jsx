@@ -9,7 +9,7 @@ import Modal from '../components/ui/Modal'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import { Search, Plus, Bot, PanelRightOpen, PanelRightClose } from 'lucide-react'
-import { API_URL } from '../lib/api'
+import { supabase } from '../lib/supabaseClient'
 
 export default function OutboundAgents() {
   const { agents, loading: agentsLoading, toggleBot, addAgent } = useAgents()
@@ -57,22 +57,41 @@ export default function OutboundAgents() {
   const handleAddContact = async () => {
     if (!newContactPhone.trim()) return
     try {
-      const res = await fetch(`${API_URL}/api/contacts/open-conversation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: newContactPhone.trim(),
-          name: newContactName.trim() || null
-        })
-      })
-      const data = await res.json()
-      if (data.success) {
-        setShowAddContact(false)
-        setNewContactName('')
-        setNewContactPhone('')
-        await refetch()
-        setSelectedContact({ id: data.contactId, name: newContactName || newContactPhone, phone: newContactPhone })
+      // 1. Find or create contact direktly in Supabase
+      let { data: contact, error: findError } = await supabase
+        .from('contacts')
+        .select('id')
+        .eq('phone', newContactPhone.trim())
+        .single()
+
+      if (findError && findError.code !== 'PGRST116') { // PGRST116 is "not found"
+        throw findError
       }
+
+      let contactId = contact?.id
+
+      if (!contactId) {
+        const { data: newContact, error: createErr } = await supabase
+          .from('contacts')
+          .insert({ 
+            phone: newContactPhone.trim(), 
+            name: newContactName.trim() || null, 
+            bot_enabled: true 
+          })
+          .select('id')
+          .single()
+        
+        if (createErr) throw createErr
+        contactId = newContact.id
+      }
+
+      // Success
+      setShowAddContact(false)
+      setNewContactName('')
+      setNewContactPhone('')
+      setContactSearch('')
+      await refetch()
+      setSelectedContact({ id: contactId, name: newContactName || newContactPhone, phone: newContactPhone })
     } catch (err) {
       console.error('Error adding contact:', err)
     }
