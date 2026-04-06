@@ -235,6 +235,30 @@ export async function deleteConversationByContact(agentId, contactId) {
   toast.success('Conversación borrada')
 }
 
+export function useContacts() {
+  const [contacts, setContacts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchContacts = useCallback(async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('contacts')
+      .select('*')
+      .order('name', { ascending: true })
+    
+    if (error) {
+      console.error('Error fetching contacts:', error)
+    } else {
+      setContacts(data)
+    }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { fetchContacts() }, [fetchContacts])
+
+  return { contacts, loading, refetch: fetchContacts }
+}
+
 export async function uploadAudio(blob) {
   const fileName = `audio_${Date.now()}.webm`
   const { data, error } = await supabase.storage

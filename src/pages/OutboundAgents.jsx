@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { useAgents, useConversations, deleteConversationByContact } from '../hooks/useMessages'
+import { useAgents, useConversations, useContacts, deleteConversationByContact } from '../hooks/useMessages'
 import { useRealtime } from '../hooks/useRealtime'
 import ConversationList from '../components/chat/ConversationList'
 import ChatWindow from '../components/chat/ChatWindow'
@@ -23,6 +22,8 @@ export default function OutboundAgents() {
   const [showAddContact, setShowAddContact] = useState(false)
   const [newContactName, setNewContactName] = useState('')
   const [newContactPhone, setNewContactPhone] = useState('')
+  const { contacts } = useContacts()
+  const [contactSearch, setContactSearch] = useState('')
 
   const activeAgent = selectedAgent || agents[0]
   const { conversations, loading: convsLoading, refetch, toggleContactBot } = useConversations(activeAgent?.id)
@@ -217,8 +218,68 @@ export default function OutboundAgents() {
       </Modal>
 
       {/* Add contact modal */}
-      <Modal isOpen={showAddContact} onClose={() => setShowAddContact(false)} title="Nueva Conversación">
+      <Modal isOpen={showAddContact} onClose={() => {
+        setShowAddContact(false)
+        setContactSearch('')
+      }} title="Nueva Conversación">
         <div className="space-y-4">
+          {/* Picker / Search */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-surface-300">Buscar contacto existente</label>
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500" />
+              <input
+                type="text"
+                placeholder="Escribe un nombre o teléfono..."
+                value={contactSearch}
+                onChange={(e) => setContactSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-surface-800/60 border border-surface-700/30 text-surface-200 placeholder-surface-500 focus:outline-none focus:ring-1 focus:ring-primary-500/40 transition-all"
+              />
+            </div>
+            
+            {contactSearch.trim() && (
+              <div className="max-h-40 overflow-y-auto rounded-lg border border-surface-700/30 bg-surface-800/40 mt-1 divide-y divide-surface-700/20">
+                {contacts
+                  .filter(c => 
+                    c.name?.toLowerCase().includes(contactSearch.toLowerCase()) || 
+                    c.phone?.includes(contactSearch)
+                  )
+                  .map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => {
+                        setNewContactPhone(c.phone)
+                        setNewContactName(c.name || '')
+                        setContactSearch('')
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm text-surface-300 hover:bg-primary-500/10 hover:text-primary-400 transition-colors flex flex-col"
+                    >
+                      <span className="font-medium">{c.name || 'Sin nombre'}</span>
+                      <span className="text-[10px] text-surface-500">{c.phone}</span>
+                    </button>
+                  ))
+                }
+                {contacts.filter(c => 
+                    c.name?.toLowerCase().includes(contactSearch.toLowerCase()) || 
+                    c.phone?.includes(contactSearch)
+                  ).length === 0 && (
+                  <div className="px-3 py-4 text-center text-xs text-surface-500">
+                    No se encontraron contactos.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+              <div className="w-full border-t border-surface-800"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-surface-900 px-2 text-surface-500">O crear nuevo</span>
+            </div>
+          </div>
+
           <Input
             label="Número de teléfono (con código de país)"
             value={newContactPhone}
@@ -232,7 +293,12 @@ export default function OutboundAgents() {
             placeholder="ej: Juan Pérez"
           />
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setShowAddContact(false)}>Cancelar</Button>
+            <Button variant="secondary" onClick={() => {
+              setShowAddContact(false)
+              setContactSearch('')
+              setNewContactName('')
+              setNewContactPhone('')
+            }}>Cancelar</Button>
             <Button onClick={handleAddContact}>Iniciar chat</Button>
           </div>
         </div>
