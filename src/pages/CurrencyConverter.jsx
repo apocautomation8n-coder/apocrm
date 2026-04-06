@@ -199,7 +199,7 @@ export default function CurrencyConverter() {
                 value={amounts.usd} 
                 onChange={(e) => handleConvert('usd', e.target.value)} 
                 placeholder="0"
-                icon={<DollarSign size={14} />}
+                icon={DollarSign}
               />
               <Input 
                 label="Recibo ARS" 
@@ -229,7 +229,7 @@ export default function CurrencyConverter() {
                 value={amounts.usd_from_ars} 
                 onChange={(e) => handleConvert('usd_from_ars', e.target.value)} 
                 placeholder="0"
-                icon={<DollarSign size={14} />}
+                icon={DollarSign}
               />
             </div>
           </div>

@@ -29,7 +29,9 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(null)
   const [showEventModal, setShowEventModal] = useState(false)
   const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ title: '', date: '', start_time: '', end_time: '', description: '', guests: '', meet_link: '' })
+  const [form, setForm] = useState({ title: '', date: '', start_time: '', end_time: '', description: '', guests: [], meet_link: '' })
+  const [guestInput, setGuestInput] = useState('')
+  const [isGeneratingMeet, setIsGeneratingMeet] = useState(false)
   
   // Timezone helper state
   const [tzForm, setTzForm] = useState({ country: 'AR', time: '' })
@@ -76,13 +78,14 @@ export default function Calendar() {
   const handleSave = async () => {
     if (!form.title.trim() || !form.date) return toast.error('Título y fecha son obligatorios')
 
+    const guestsString = form.guests.join(', ')
     const payload = {
       title: form.title,
       date: form.date,
       start_time: form.start_time || null,
       end_time: form.end_time || null,
       description: form.description || null,
-      guests: form.guests || null,
+      guests: guestsString || null,
     }
 
     if (editing) {
@@ -108,6 +111,7 @@ export default function Calendar() {
       const createdId = data.id
 
       // Send webhook to n8n to generate Meet link and email
+      setIsGeneratingMeet(true)
       try {
         const response = await fetch('https://automation8n.fluxia.site/webhook/e64e181f-b3f4-4e02-b6c3-6c5f126a39ab', {
           method: 'POST',
@@ -116,23 +120,30 @@ export default function Calendar() {
         })
         
         if (response.ok) {
-          const resData = await response.json()
-          const link = resData.meet_link || resData.link || resData.url
-          if (link) {
-            await supabase.from('calendar_events').update({ meet_link: link }).eq('id', createdId)
-            toast.success('Link de Meet generado e integrado')
+          const text = await response.text()
+          if (text) {
+            const resData = JSON.parse(text)
+            const link = resData.meet_link || resData.link || resData.url
+            if (link) {
+              await supabase.from('calendar_events').update({ meet_link: link }).eq('id', createdId)
+              setEvents(prev => prev.map(e => e.id === createdId ? { ...e, meet_link: link } : e))
+              toast.success('Link de Meet generado e integrado')
+            }
           } else {
-            toast.success('Reunión agendada y disparada a n8n')
+            toast.success('Reunión agendada')
           }
         }
       } catch (err) {
          console.error('Error n8n webhook', err)
+      } finally {
+        setIsGeneratingMeet(false)
       }
     }
 
     setShowEventModal(false)
     setEditing(null)
-    setForm({ title: '', date: '', start_time: '', end_time: '', description: '', guests: '', meet_link: '' })
+    setForm({ title: '', date: '', start_time: '', end_time: '', description: '', guests: [], meet_link: '' })
+    setGuestInput('')
     setTzForm({ country: 'AR', time: '' })
     fetchEvents()
   }
@@ -148,22 +159,46 @@ export default function Calendar() {
     setEditing(null)
     setForm({
       title: '', date: format(date || new Date(), 'yyyy-MM-dd'),
-      start_time: '', end_time: '', description: '', guests: '',
+      start_time: '', end_time: '', description: '', guests: [],
     })
+    setGuestInput('')
     setShowEventModal(true)
   }
 
   const openEditEvent = (event) => {
+    const guestsArray = event.guests ? event.guests.split(',').map(g => g.trim()).filter(Boolean) : []
+    setEditing(event)
     setForm({
       title: event.title,
       date: event.date,
       start_time: event.start_time || '',
       end_time: event.end_time || '',
       description: event.description || '',
-      guests: event.guests || '',
+      guests: guestsArray,
       meet_link: event.meet_link || '',
     })
+    setGuestInput('')
     setShowEventModal(true)
+  }
+
+  const addGuest = () => {
+    const email = guestInput.trim()
+    if (!email) return
+    if (!email.includes('@')) return toast.error('Email inválido')
+    if (form.guests.includes(email)) return toast.error('El invitado ya existe')
+    setForm(f => ({ ...f, guests: [...f.guests, email] }))
+    setGuestInput('')
+  }
+
+  const removeGuest = (email) => {
+    setForm(f => ({ ...f, guests: f.guests.filter(g => g !== email) }))
+  }
+
+  const handleGuestKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      addGuest()
+    }
   }
 
   const applyTimezoneConversion = () => {
@@ -359,9 +394,34 @@ export default function Calendar() {
             <Input label="Hora inicio (ARG)" type="time" value={form.start_time} onChange={(e) => setForm(f => ({ ...f, start_time: e.target.value }))} />
             <Input label="Hora fin (ARG)" type="time" value={form.end_time} onChange={(e) => setForm(f => ({ ...f, end_time: e.target.value }))} />
           </div>
-          <Input label="Descripción" value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Detalles de la reunión..." />
-          <Input label="Invitados (emails)" value={form.guests} onChange={(e) => setForm(f => ({ ...f, guests: e.target.value }))} placeholder="email1@test.com, email2@test.com" />
-          {form.meet_link && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-surface-300">Invitados (Enter para agregar)</label>
+            <div className="flex flex-wrap gap-2 p-2 min-h-[42px] rounded-xl bg-surface-800/80 border border-surface-700/50">
+              {form.guests.map(email => (
+                <div key={email} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-primary-500/20 border border-primary-500/30 text-primary-300 text-xs">
+                  <span>{email}</span>
+                  <button onClick={() => removeGuest(email)} className="hover:text-white transition-colors">
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+              <input
+                className="flex-1 bg-transparent border-none outline-none text-sm text-surface-100 placeholder-surface-500 min-w-[120px]"
+                placeholder={form.guests.length === 0 ? "ejemplo@test.com" : ""}
+                value={guestInput}
+                onChange={(e) => setGuestInput(e.target.value)}
+                onKeyDown={handleGuestKeyDown}
+              />
+            </div>
+          </div>
+          {isGeneratingMeet && (
+            <div className="p-3 rounded-xl bg-primary-500/10 border border-primary-500/20 flex items-center gap-3">
+              <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs font-medium text-primary-300">Generando link de Meet y notificando...</span>
+            </div>
+          )}
+
+          {form.meet_link && !isGeneratingMeet && (
             <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Video size={16} className="text-emerald-400" />
