@@ -213,18 +213,30 @@ export default function Finance() {
           return (
             <div key={c.code} className="space-y-2">
               <div className="flex items-center gap-2 px-1">
-                <div className={`w-1.5 h-1.5 rounded-full ${c.code === 'USD' ? 'bg-emerald-500' : 'bg-primary-500'}`} />
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                  c.code === 'USD' ? 'bg-emerald-500' : 
+                  c.code === 'EUR' ? 'bg-amber-400' : 
+                  'bg-primary-500'
+                }`} />
                 <span className="text-xs font-bold text-surface-400 uppercase tracking-wider">Totales en {c.label}</span>
-                {c.code === 'USD' && (
-                  <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-tighter">Premium</span>
-                )}
+                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-tighter ${
+                  c.code === 'USD' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                  c.code === 'EUR' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                  'bg-primary-500/10 text-primary-400 border-primary-500/20'
+                }`}>
+                  {c.code === 'USD' ? 'Premium' : c.code === 'EUR' ? 'Global' : 'Local'}
+                </span>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard 
                   label="Presupuestados" 
                   value={
                     <div className="flex items-baseline gap-1">
-                       <span className="text-xs text-surface-500 font-medium">{c.code === 'USD' ? 'USD' : ''}</span>
+                       <span className={`text-[10px] font-bold ${
+                         c.code === 'USD' ? 'text-emerald-500/70' : 
+                         c.code === 'EUR' ? 'text-amber-500/70' : 
+                         'text-primary-500/70'
+                       }`}>{c.code}</span>
                        <span>{c.symbol}{t.totalBudget.toLocaleString()}</span>
                     </div>
                   } 
@@ -234,8 +246,12 @@ export default function Finance() {
                 <StatCard 
                   label="Cobrados" 
                   value={
-                    <div className="flex items-baseline gap-1 text-emerald-400">
-                       <span className="text-xs font-semibold opacity-70">{c.code === 'USD' ? 'USD' : ''}</span>
+                    <div className={`flex items-baseline gap-1 ${
+                      c.code === 'USD' ? 'text-emerald-400' : 
+                      c.code === 'EUR' ? 'text-amber-400' : 
+                      'text-emerald-400'
+                    }`}>
+                       <span className="text-[10px] font-bold opacity-70">{c.code}</span>
                        <span>{c.symbol}{t.totalCollected.toLocaleString()}</span>
                     </div>
                   } 
@@ -246,7 +262,11 @@ export default function Finance() {
                   label="Pendiente" 
                   value={
                     <div className="flex items-baseline gap-1">
-                       <span className="text-xs text-surface-500 font-medium">{c.code === 'USD' ? 'USD' : ''}</span>
+                       <span className={`text-[10px] font-bold ${
+                         c.code === 'USD' ? 'text-emerald-500/70' : 
+                         c.code === 'EUR' ? 'text-amber-500/70' : 
+                         'text-primary-500/70'
+                       }`}>{c.code}</span>
                        <span>{c.symbol}{t.totalPending.toLocaleString()}</span>
                     </div>
                   } 
@@ -256,8 +276,12 @@ export default function Finance() {
                 <StatCard 
                   label="Ganancia Neta" 
                   value={
-                    <div className="flex items-baseline gap-1 text-emerald-400 font-bold">
-                       <span className="text-xs opacity-70">{c.code === 'USD' ? 'USD' : ''}</span>
+                    <div className={`flex items-baseline gap-1 font-bold ${
+                      c.code === 'USD' ? 'text-emerald-400' : 
+                      c.code === 'EUR' ? 'text-amber-400' : 
+                      'text-emerald-400'
+                    }`}>
+                       <span className="text-[10px] opacity-70">{c.code}</span>
                        <span>{c.symbol}{t.totalNetProfit.toLocaleString()}</span>
                     </div>
                   } 
@@ -352,31 +376,35 @@ export default function Finance() {
                     <td className="px-4 py-3.5 text-surface-400">{t.responsible || '—'}</td>
                     <td className="px-4 py-3.5 text-right font-semibold text-surface-200">
                       <div className="flex items-center justify-end gap-1">
-                        {t.currency === 'USD' && <span className="text-[10px] text-emerald-500/80 font-bold">USD</span>}
+                        <span className={`text-[10px] font-bold ${
+                          t.currency === 'USD' ? 'text-emerald-500/80' : 
+                          t.currency === 'EUR' ? 'text-amber-500/80' : 
+                          'text-primary-500/80'
+                        }`}>{t.currency || 'ARS'}</span>
                         <span>{currencies.find(c => c.code === (t.currency || 'ARS'))?.symbol}{Number(t.budget).toLocaleString()}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3.5 text-right font-semibold text-emerald-400">
-                      <div className="flex items-center justify-end gap-1">
-                        {t.currency === 'USD' && <span className="text-[10px] opacity-70 font-bold">USD</span>}
+                      <div className="flex items-center justify-end gap-1 text-emerald-400">
+                        <span className="text-[10px] opacity-70 font-bold">{t.currency || 'ARS'}</span>
                         <span>{currencies.find(c => c.code === (t.currency || 'ARS'))?.symbol}{Number(t.collected).toLocaleString()}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3.5 text-right text-surface-400">
                       <div className="flex items-center justify-end gap-1">
-                        {t.currency === 'USD' && <span className="text-[10px] opacity-70 font-bold">USD</span>}
+                        <span className="text-[10px] opacity-70 font-bold">{t.currency || 'ARS'}</span>
                         <span>{currencies.find(c => c.code === (t.currency || 'ARS'))?.symbol}{Number(t.freelancer_fee).toLocaleString()}</span>
                       </div>
                     </td>
                     <td className={`px-4 py-3.5 text-right font-medium ${t.remaining > 0 ? 'text-amber-400' : 'text-surface-400'}`}>
                       <div className="flex items-center justify-end gap-1">
-                        {t.currency === 'USD' && <span className="text-[10px] opacity-70 font-bold">USD</span>}
+                        <span className="text-[10px] opacity-70 font-bold">{t.currency || 'ARS'}</span>
                         <span>{currencies.find(c => c.code === (t.currency || 'ARS'))?.symbol}{Number(t.remaining).toLocaleString()}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3.5 text-right font-bold text-emerald-400">
-                      <div className="flex items-center justify-end gap-1">
-                        {t.currency === 'USD' && <span className="text-[10px] opacity-70 font-bold">USD</span>}
+                      <div className="flex items-center justify-end gap-1 text-emerald-400">
+                        <span className="text-[10px] opacity-70 font-bold">{t.currency || 'ARS'}</span>
                         <span>{currencies.find(c => c.code === (t.currency || 'ARS'))?.symbol}{(Number(t.budget || 0) - Number(t.freelancer_fee || 0)).toLocaleString()}</span>
                       </div>
                     </td>
