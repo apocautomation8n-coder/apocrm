@@ -11,7 +11,7 @@ const Input = forwardRef(({ label, error, icon: Icon, className = '', ...props }
       <div className="relative">
         {Icon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500">
-            <Icon size={16} />
+            {typeof Icon === 'function' ? <Icon size={16} /> : Icon}
           </div>
         )}
         <input
