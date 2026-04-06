@@ -23,6 +23,7 @@ export default function OutboundAgents() {
   const [showAddContact, setShowAddContact] = useState(false)
   const [newContactName, setNewContactName] = useState('')
   const [newContactPhone, setNewContactPhone] = useState('')
+  const [newContactEmail, setNewContactEmail] = useState('')
   const { contacts } = useContacts()
   const [contactSearch, setContactSearch] = useState('')
 
@@ -76,6 +77,7 @@ export default function OutboundAgents() {
           .insert({ 
             phone: newContactPhone.trim(), 
             name: newContactName.trim() || null, 
+            email: newContactEmail.trim() || null,
             bot_enabled: true 
           })
           .select('id')
@@ -89,6 +91,7 @@ export default function OutboundAgents() {
       setShowAddContact(false)
       setNewContactName('')
       setNewContactPhone('')
+      setNewContactEmail('')
       setContactSearch('')
       await refetch()
       setSelectedContact({ id: contactId, name: newContactName || newContactPhone, phone: newContactPhone })
@@ -312,12 +315,19 @@ export default function OutboundAgents() {
             onChange={(e) => setNewContactName(e.target.value)}
             placeholder="ej: Juan Pérez"
           />
+          <Input
+            label="Email (opcional)"
+            value={newContactEmail}
+            onChange={(e) => setNewContactEmail(e.target.value)}
+            placeholder="ej: juan@empresa.com"
+          />
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => {
               setShowAddContact(false)
               setContactSearch('')
               setNewContactName('')
               setNewContactPhone('')
+              setNewContactEmail('')
             }}>Cancelar</Button>
             <Button onClick={handleAddContact}>Iniciar chat</Button>
           </div>

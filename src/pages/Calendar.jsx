@@ -11,13 +11,16 @@ import {
   isSameMonth,
   isSameDay,
   isToday,
+  addHours,
+  subHours,
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { supabase } from '../lib/supabaseClient'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, Trash2, Pencil } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, Trash2, Pencil, Globe, Video, ExternalLink, ArrowRightLeft } from 'lucide-react'
+import Select from '../components/ui/Select'
 import toast from 'react-hot-toast'
 
 export default function Calendar() {
@@ -26,7 +29,19 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(null)
   const [showEventModal, setShowEventModal] = useState(false)
   const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ title: '', date: '', start_time: '', end_time: '', description: '', guests: '' })
+  const [form, setForm] = useState({ title: '', date: '', start_time: '', end_time: '', description: '', guests: '', meet_link: '' })
+  
+  // Timezone helper state
+  const [tzForm, setTzForm] = useState({ country: 'AR', time: '' })
+
+  const timezones = [
+    { code: 'AR', name: 'Argentina (Base)', offset: 0 },
+    { code: 'ES', name: 'España (Madrid)', offset: -5 },
+    { code: 'MX', name: 'México (CDMX)', offset: 3 },
+    { code: 'US', name: 'USA (Miami/NY)', offset: 1 },
+    { code: 'CO', name: 'Col/Perú/Ecu', offset: 2 },
+    { code: 'CL', name: 'Chile', offset: 0 },
+  ]
 
   // Use local Supabase table for events (can be enhanced with Google Calendar later)
   const fetchEvents = async () => {
@@ -86,12 +101,23 @@ export default function Calendar() {
 
       // Send webhook to n8n to generate Meet link and email
       try {
-        await fetch('https://automation8n.fluxia.site/webhook/e64e181f-b3f4-4e02-b6c3-6c5f126a39ab', {
+        const response = await fetch('https://automation8n.fluxia.site/webhook/e64e181f-b3f4-4e02-b6c3-6c5f126a39ab', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ ...payload, event_id: createdId }) // passing ID if needed
         })
-        toast.success('Reunión agendada y disparada a n8n')
+        
+        if (response.ok) {
+          const data = await response.json()
+          // If webhook returns a link, update the record
+          const link = data.meet_link || data.link || data.url
+          if (link) {
+            await supabase.from('calendar_events').update({ meet_link: link }).eq('id', createdId)
+            toast.success('Link de Meet generado e integrado')
+          } else {
+            toast.success('Reunión agendada y disparada a n8n')
+          }
+        }
       } catch (err) {
          console.error('Error n8n webhook', err)
       }
@@ -99,7 +125,8 @@ export default function Calendar() {
 
     setShowEventModal(false)
     setEditing(null)
-    setForm({ title: '', date: '', start_time: '', end_time: '', description: '', guests: '' })
+    setForm({ title: '', date: '', start_time: '', end_time: '', description: '', guests: '', meet_link: '' })
+    setTzForm({ country: 'AR', time: '' })
     fetchEvents()
   }
 
@@ -120,7 +147,6 @@ export default function Calendar() {
   }
 
   const openEditEvent = (event) => {
-    setEditing(event)
     setForm({
       title: event.title,
       date: event.date,
@@ -128,8 +154,24 @@ export default function Calendar() {
       end_time: event.end_time || '',
       description: event.description || '',
       guests: event.guests || '',
+      meet_link: event.meet_link || '',
     })
     setShowEventModal(true)
+  }
+
+  const applyTimezoneConversion = () => {
+    if (!tzForm.time) return
+    const [hours, minutes] = tzForm.time.split(':').map(Number)
+    const tz = timezones.find(t => t.code === tzForm.country)
+    
+    // Calculate Argentina time (ART)
+    let artHours = hours + tz.offset
+    if (artHours < 0) artHours += 24
+    if (artHours >= 24) artHours -= 24
+    
+    const formattedHour = `${String(artHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+    setForm(f => ({ ...f, start_time: formattedHour }))
+    toast.success(`Convertido: ${tzForm.time} (${tz.code}) -> ${formattedHour} (AR)`)
   }
 
   const weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
@@ -248,6 +290,17 @@ export default function Calendar() {
                         </span>
                       )}
                       {evt.description && <span>{evt.description}</span>}
+                      {evt.meet_link && (
+                        <a 
+                          href={evt.meet_link} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="flex items-center gap-1 text-primary-400 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Video size={11} /> Unirse a Meet
+                        </a>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -270,12 +323,48 @@ export default function Calendar() {
         <div className="space-y-4">
           <Input label="Título" value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Reunión con cliente..." />
           <Input label="Fecha" type="date" value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} />
+          <div className="p-4 rounded-xl bg-surface-950/40 border border-surface-800/60 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-surface-400 uppercase tracking-wider">
+              <Globe size={14} className="text-primary-400" />
+              Conversor de Horario
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Select 
+                label="País del Cliente" 
+                value={tzForm.country} 
+                onChange={(e) => setTzForm(p => ({ ...p, country: e.target.value }))}
+              >
+                {timezones.map(t => <option key={t.code} value={t.code}>{t.name}</option>)}
+              </Select>
+              <Input 
+                label="Hora del Cliente" 
+                type="time" 
+                value={tzForm.time} 
+                onChange={(e) => setTzForm(p => ({ ...p, time: e.target.value }))} 
+              />
+            </div>
+            <Button variant="secondary" size="xs" fullWidth onClick={applyTimezoneConversion} disabled={!tzForm.time}>
+              <ArrowRightLeft size={12} /> Convertir a Hora Arg
+            </Button>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Hora inicio" type="time" value={form.start_time} onChange={(e) => setForm(f => ({ ...f, start_time: e.target.value }))} />
-            <Input label="Hora fin" type="time" value={form.end_time} onChange={(e) => setForm(f => ({ ...f, end_time: e.target.value }))} />
+            <Input label="Hora inicio (ARG)" type="time" value={form.start_time} onChange={(e) => setForm(f => ({ ...f, start_time: e.target.value }))} />
+            <Input label="Hora fin (ARG)" type="time" value={form.end_time} onChange={(e) => setForm(f => ({ ...f, end_time: e.target.value }))} />
           </div>
           <Input label="Descripción" value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Detalles de la reunión..." />
           <Input label="Invitados (emails)" value={form.guests} onChange={(e) => setForm(f => ({ ...f, guests: e.target.value }))} placeholder="email1@test.com, email2@test.com" />
+          {form.meet_link && (
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Video size={16} className="text-emerald-400" />
+                <span className="text-xs font-medium text-emerald-200 truncate max-w-[200px]">{form.meet_link}</span>
+              </div>
+              <a href={form.meet_link} target="_blank" rel="noreferrer" className="p-1 rounded-lg hover:bg-emerald-500/20 text-emerald-400 transition-all">
+                <ExternalLink size={14} />
+              </a>
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => setShowEventModal(false)}>Cancelar</Button>
             <Button onClick={handleSave}>{editing ? 'Guardar' : 'Crear'}</Button>

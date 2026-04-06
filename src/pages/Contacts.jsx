@@ -14,7 +14,7 @@ export default function Contacts() {
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ name: '', phone: '' })
+  const [form, setForm] = useState({ name: '', phone: '', email: '' })
   const navigate = useNavigate()
 
   const fetchContacts = async () => {
@@ -40,18 +40,18 @@ export default function Contacts() {
     if (!form.phone.trim()) return toast.error('El teléfono es obligatorio')
 
     if (editing) {
-      const { error } = await supabase.from('contacts').update({ name: form.name, phone: form.phone }).eq('id', editing.id)
+      const { error } = await supabase.from('contacts').update({ name: form.name, phone: form.phone, email: form.email }).eq('id', editing.id)
       if (error) return toast.error('Error actualizando contacto')
       toast.success('Contacto actualizado')
     } else {
-      const { error } = await supabase.from('contacts').insert({ name: form.name, phone: form.phone })
+      const { error } = await supabase.from('contacts').insert({ name: form.name, phone: form.phone, email: form.email })
       if (error) return toast.error(error.message.includes('duplicate') ? 'Ese teléfono ya existe' : 'Error creando contacto')
       toast.success('Contacto creado')
     }
 
     setShowModal(false)
     setEditing(null)
-    setForm({ name: '', phone: '' })
+    setForm({ name: '', phone: '', email: '' })
     fetchContacts()
   }
 
@@ -82,7 +82,7 @@ export default function Contacts() {
 
   const openEdit = (contact) => {
     setEditing(contact)
-    setForm({ name: contact.name || '', phone: contact.phone })
+    setForm({ name: contact.name || '', phone: contact.phone, email: contact.email || '' })
     setShowModal(true)
   }
 
@@ -97,7 +97,7 @@ export default function Contacts() {
           </h1>
           <p className="text-sm text-surface-400 mt-1">{contacts.length} contactos registrados</p>
         </div>
-        <Button onClick={() => { setEditing(null); setForm({ name: '', phone: '' }); setShowModal(true) }}>
+        <Button onClick={() => { setEditing(null); setForm({ name: '', phone: '', email: '' }); setShowModal(true) }}>
           <Plus size={16} />
           Agregar contacto
         </Button>
@@ -109,7 +109,7 @@ export default function Contacts() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por nombre o teléfono..."
+          placeholder="Buscar por nombre, teléfono o email..."
           className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-800/80 border border-surface-700/50 text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 text-sm"
         />
       </div>
@@ -128,7 +128,7 @@ export default function Contacts() {
               <thead>
                 <tr className="border-b border-surface-800/60">
                   <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Nombre</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Teléfono</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Teléfono / Email</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Fecha</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-surface-400 uppercase tracking-wider">Acciones</th>
                 </tr>
@@ -144,7 +144,10 @@ export default function Contacts() {
                         <span className="text-surface-200 font-medium">{contact.name || 'Sin nombre'}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-surface-300">{contact.phone}</td>
+                    <td className="px-5 py-3.5">
+                      <div className="text-surface-300">{contact.phone}</div>
+                      {contact.email && <div className="text-xs text-surface-500">{contact.email}</div>}
+                    </td>
                     <td className="px-5 py-3.5 text-surface-400">{format(new Date(contact.created_at), 'dd/MM/yyyy')}</td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center justify-end gap-1">
@@ -184,6 +187,7 @@ export default function Contacts() {
         <div className="space-y-4">
           <Input label="Nombre" value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Juan Pérez" />
           <Input label="Teléfono" value={form.phone} onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="5491112345678" />
+          <Input label="Email" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} placeholder="juan@empresa.com" />
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => setShowModal(false)}>Cancelar</Button>
             <Button onClick={handleSave}>{editing ? 'Guardar' : 'Crear'}</Button>
