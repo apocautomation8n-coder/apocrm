@@ -1,8 +1,15 @@
-import { Trash2 } from 'lucide-react'
+import { Trash2, Plus } from 'lucide-react'
 import { format, isToday, isYesterday } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-export default function ConversationList({ conversations, selectedContactId, onSelect, onDelete, loading }) {
+export default function ConversationList({ 
+  conversations, 
+  selectedContactId, 
+  onSelect, 
+  onDelete, 
+  onAdd,
+  loading 
+}) {
   const formatTime = (timestamp) => {
     const date = new Date(timestamp)
     if (isToday(date)) return format(date, 'HH:mm')
@@ -20,8 +27,21 @@ export default function ConversationList({ conversations, selectedContactId, onS
 
   if (conversations.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center p-6">
-        <p className="text-surface-500 text-sm text-center">No hay conversaciones aún</p>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-surface-800/50 flex items-center justify-center text-surface-600">
+          <Plus size={24} />
+        </div>
+        <div>
+          <p className="text-surface-400 text-sm font-medium">No hay conversaciones aún</p>
+          <p className="text-surface-600 text-xs mt-1">Hacé clic abajo para iniciar una</p>
+        </div>
+        <button
+          onClick={onAdd}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600/10 text-primary-400 hover:bg-primary-600/20 transition-all text-sm font-medium cursor-pointer"
+        >
+          <Plus size={16} />
+          Nueva conversación
+        </button>
       </div>
     )
   }
@@ -79,7 +99,7 @@ export default function ConversationList({ conversations, selectedContactId, onS
               e.stopPropagation()
               onDelete(conv.contact?.id)
             }}
-            className="absolute right-2 bottom-2 p-2 rounded-lg text-surface-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-10"
+            className="absolute right-2 top-8 p-2 rounded-lg text-red-500/60 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-10"
             title="Borrar conversación"
           >
             <Trash2 size={14} />

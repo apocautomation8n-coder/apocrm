@@ -19,6 +19,9 @@ export default function OutboundAgents() {
   const [newAgentName, setNewAgentName] = useState('')
   const [newAgentSlug, setNewAgentSlug] = useState('')
   const [search, setSearch] = useState('')
+  const [showAddContact, setShowAddContact] = useState(false)
+  const [newContactName, setNewContactName] = useState('')
+  const [newContactPhone, setNewContactPhone] = useState('')
 
   const activeAgent = selectedAgent || agents[0]
   const { conversations, loading: convsLoading, refetch, toggleContactBot } = useConversations(activeAgent?.id)
@@ -46,6 +49,30 @@ export default function OutboundAgents() {
     setShowAddAgent(false)
     setNewAgentName('')
     setNewAgentSlug('')
+  }
+
+  const handleAddContact = async () => {
+    if (!newContactPhone.trim()) return
+    try {
+      const res = await fetch('http://localhost:3001/api/contacts/open-conversation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: newContactPhone.trim(),
+          name: newContactName.trim() || null
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setShowAddContact(false)
+        setNewContactName('')
+        setNewContactPhone('')
+        await refetch()
+        setSelectedContact({ id: data.contactId, name: newContactName || newContactPhone, phone: newContactPhone })
+      }
+    } catch (err) {
+      console.error('Error adding contact:', err)
+    }
   }
 
   const handleDeleteConversation = async (contactId) => {
@@ -120,14 +147,23 @@ export default function OutboundAgents() {
         <div className="w-80 border-r border-surface-800/60 flex flex-col shrink-0 bg-surface-900/30">
           {/* Search */}
           <div className="p-3 border-b border-surface-800/40">
-            <div className="relative">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar conversación..."
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-surface-800/60 border border-surface-700/30 text-surface-200 placeholder-surface-500 focus:outline-none focus:ring-1 focus:ring-primary-500/40"
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar..."
+                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-surface-800/60 border border-surface-700/30 text-surface-200 placeholder-surface-500 focus:outline-none focus:ring-1 focus:ring-primary-500/40 transition-all"
+                />
+              </div>
+              <button
+                onClick={() => setShowAddContact(true)}
+                className="p-2 text-primary-400 hover:text-primary-300 bg-primary-600/10 hover:bg-primary-600/20 rounded-lg transition-all cursor-pointer shrink-0"
+                title="Nueva conversación"
+              >
+                <Plus size={18} />
+              </button>
             </div>
           </div>
           <ConversationList
@@ -135,6 +171,7 @@ export default function OutboundAgents() {
             selectedContactId={currentContact?.id}
             onSelect={setSelectedContact}
             onDelete={handleDeleteConversation}
+            onAdd={() => setShowAddContact(true)}
             loading={convsLoading}
           />
         </div>
@@ -174,6 +211,28 @@ export default function OutboundAgents() {
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => setShowAddAgent(false)}>Cancelar</Button>
             <Button onClick={handleAddAgent}>Crear agente</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add contact modal */}
+      <Modal isOpen={showAddContact} onClose={() => setShowAddContact(false)} title="Nueva Conversación">
+        <div className="space-y-4">
+          <Input
+            label="Número de teléfono (con código de país)"
+            value={newContactPhone}
+            onChange={(e) => setNewContactPhone(e.target.value)}
+            placeholder="ej: 5491112345678"
+          />
+          <Input
+            label="Nombre completo (opcional)"
+            value={newContactName}
+            onChange={(e) => setNewContactName(e.target.value)}
+            placeholder="ej: Juan Pérez"
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setShowAddContact(false)}>Cancelar</Button>
+            <Button onClick={handleAddContact}>Iniciar chat</Button>
           </div>
         </div>
       </Modal>
