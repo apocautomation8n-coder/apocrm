@@ -11,6 +11,11 @@ import { format, parseISO } from 'date-fns'
 import toast from 'react-hot-toast'
 
 const sections = ['b2b', 'wg', 'eleven', 'otro']
+const currencies = [
+  { code: 'ARS', symbol: '$', label: 'Pesos (ARS)' },
+  { code: 'USD', symbol: 'u$s', label: 'Dólares (USD)' },
+  { code: 'EUR', symbol: '€', label: 'Euros (EUR)' },
+]
 
 export default function Finance() {
   const [transactions, setTransactions] = useState([])
@@ -22,13 +27,15 @@ export default function Finance() {
   const [filterSection, setFilterSection] = useState('all')
   const [filterStatus, setFilterStatus] = useState('activo')
   const [filterMonth, setFilterMonth] = useState('all') // 'all' or 'YYYY-MM'
+  const [filterCurrency, setFilterCurrency] = useState('all')
   
   const [form, setForm] = useState({
     type: 'ingreso', amount: 0, date: format(new Date(), 'yyyy-MM-dd'),
     section: 'b2b', client: '', responsible: '', 
     budget: 0, collected: 0, freelancer_fee: 0, 
     freelancer_paid: 0, pending_freelancer: 0, 
-    remaining: 0, net_profit: 0, notes: '', status: 'activo'
+    remaining: 0, net_profit: 0, notes: '', status: 'activo',
+    currency: 'ARS'
   })
 
   // Derive available months from transactions
@@ -67,15 +74,25 @@ export default function Finance() {
       return false
     }
 
+    // 4. Filtrar por Moneda
+    if (filterCurrency !== 'all' && t.currency !== filterCurrency) return false
+
     return true
   })
 
   const totals = useMemo(() => {
-    const totalBudget = filtered.reduce((s, t) => s + Number(t.budget || 0), 0)
-    const totalCollected = filtered.reduce((s, t) => s + Number(t.collected || 0), 0)
-    const totalNetProfit = filtered.reduce((s, t) => s + (Number(t.budget || 0) - Number(t.freelancer_fee || 0)), 0)
-    const totalPending = filtered.reduce((s, t) => s + Number(t.remaining || 0), 0)
-    return { totalBudget, totalCollected, totalNetProfit, totalPending }
+    const res = {}
+    currencies.forEach(c => {
+      const perCurr = filtered.filter(t => (t.currency || 'ARS') === c.code)
+      res[c.code] = {
+        totalBudget: perCurr.reduce((s, t) => s + Number(t.budget || 0), 0),
+        totalCollected: perCurr.reduce((s, t) => s + Number(t.collected || 0), 0),
+        totalNetProfit: perCurr.reduce((s, t) => s + (Number(t.budget || 0) - Number(t.freelancer_fee || 0)), 0),
+        totalPending: perCurr.reduce((s, t) => s + Number(t.remaining || 0), 0),
+        symbol: c.symbol
+      }
+    })
+    return res
   }, [filtered])
 
   const handleSave = async () => {
@@ -140,7 +157,8 @@ export default function Finance() {
       section: 'b2b', client: '', responsible: '', 
       budget: 0, collected: 0, freelancer_fee: 0, 
       freelancer_paid: 0, pending_freelancer: 0, 
-      remaining: 0, net_profit: 0, notes: '', status: 'activo'
+      remaining: 0, net_profit: 0, notes: '', status: 'activo',
+      currency: 'ARS'
     })
     setShowModal(true)
   }
@@ -162,7 +180,8 @@ export default function Finance() {
       remaining: t.remaining || 0, 
       net_profit: t.net_profit || 0, 
       notes: t.notes || '',
-      status: t.status || 'activo'
+      status: t.status || 'activo',
+      currency: t.currency || 'ARS'
     })
     setShowModal(true)
   }
@@ -184,12 +203,28 @@ export default function Finance() {
         </Button>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Presupuestados" value={`$${totals.totalBudget.toLocaleString()}`} icon={TrendingUp} color="primary" />
-        <StatCard label="Cobrados" value={`$${totals.totalCollected.toLocaleString()}`} icon={DollarSign} color="success" />
-        <StatCard label="Pendiente" value={`$${totals.totalPending.toLocaleString()}`} icon={TrendingDown} color="warning" />
-        <StatCard label="Ganancia Neta" value={`$${totals.totalNetProfit.toLocaleString()}`} icon={DollarSign} color="accent" />
+      {/* KPI Cards (Breakdown by currency) */}
+      <div className="space-y-4">
+        {currencies.map(c => {
+          const t = totals[c.code]
+          if (filterCurrency !== 'all' && filterCurrency !== c.code) return null
+          if (t.totalBudget === 0 && t.totalCollected === 0 && filterCurrency === 'all') return null
+          
+          return (
+            <div key={c.code} className="space-y-2">
+              <div className="flex items-center gap-2 px-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+                <span className="text-xs font-bold text-surface-400 uppercase tracking-wider">Totales en {c.label}</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard label="Presupuestados" value={`${c.symbol}${t.totalBudget.toLocaleString()}`} icon={TrendingUp} color="primary" />
+                <StatCard label="Cobrados" value={`${c.symbol}${t.totalCollected.toLocaleString()}`} icon={DollarSign} color="success" />
+                <StatCard label="Pendiente" value={`${c.symbol}${t.totalPending.toLocaleString()}`} icon={TrendingDown} color="warning" />
+                <StatCard label="Ganancia Neta" value={`${c.symbol}${t.totalNetProfit.toLocaleString()}`} icon={DollarSign} color="accent" />
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {/* Filters */}
@@ -228,6 +263,15 @@ export default function Finance() {
           <option value="all">Todas las secciones</option>
           {sections.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
         </select>
+
+        <select
+          value={filterCurrency}
+          onChange={(e) => setFilterCurrency(e.target.value)}
+          className="px-3 py-1.5 rounded-lg bg-surface-800 border border-surface-700/50 text-surface-200 text-sm focus:outline-none cursor-pointer hover:border-surface-600 transition-colors"
+        >
+          <option value="all">Todas las monedas</option>
+          {currencies.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+        </select>
       </div>
 
       {/* Table */}
@@ -255,16 +299,21 @@ export default function Finance() {
               <tbody>
                 {filtered.map(t => (
                   <tr key={t.id} className={`border-b border-surface-800/30 hover:bg-surface-800/30 transition-colors ${t.status === 'cerrado' ? 'opacity-50' : ''}`}>
-                    <td className="px-4 py-3.5"><Badge color={t.status === 'activo' ? "primary" : "neutral"}>{t.section?.toUpperCase() || 'OTRO'}</Badge></td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex flex-col gap-1">
+                        <Badge color={t.status === 'activo' ? "primary" : "neutral"}>{t.section?.toUpperCase() || 'OTRO'}</Badge>
+                        <span className="text-[10px] text-surface-500 font-bold ml-1">{t.currency || 'ARS'}</span>
+                      </div>
+                    </td>
                     <td className="px-4 py-3.5 text-surface-200 font-medium">{t.client || t.description || '—'}</td>
                     <td className="px-4 py-3.5 text-surface-400">{t.responsible || '—'}</td>
-                    <td className="px-4 py-3.5 text-right font-semibold text-surface-200">${Number(t.budget).toLocaleString()}</td>
-                    <td className="px-4 py-3.5 text-right font-semibold text-emerald-400">${Number(t.collected).toLocaleString()}</td>
-                    <td className="px-4 py-3.5 text-right text-surface-400">${Number(t.freelancer_fee).toLocaleString()}</td>
+                    <td className="px-4 py-3.5 text-right font-semibold text-surface-200">{currencies.find(c => c.code === (t.currency || 'ARS'))?.symbol}{Number(t.budget).toLocaleString()}</td>
+                    <td className="px-4 py-3.5 text-right font-semibold text-emerald-400">{currencies.find(c => c.code === (t.currency || 'ARS'))?.symbol}{Number(t.collected).toLocaleString()}</td>
+                    <td className="px-4 py-3.5 text-right text-surface-400">{currencies.find(c => c.code === (t.currency || 'ARS'))?.symbol}{Number(t.freelancer_fee).toLocaleString()}</td>
                     <td className={`px-4 py-3.5 text-right font-medium ${t.remaining > 0 ? 'text-amber-400' : 'text-surface-400'}`}>
-                      ${Number(t.remaining).toLocaleString()}
+                      {currencies.find(c => c.code === (t.currency || 'ARS'))?.symbol}{Number(t.remaining).toLocaleString()}
                     </td>
-                    <td className="px-4 py-3.5 text-right font-bold text-emerald-400">${(Number(t.budget || 0) - Number(t.freelancer_fee || 0)).toLocaleString()}</td>
+                    <td className="px-4 py-3.5 text-right font-bold text-emerald-400">{currencies.find(c => c.code === (t.currency || 'ARS'))?.symbol}{(Number(t.budget || 0) - Number(t.freelancer_fee || 0)).toLocaleString()}</td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center justify-end gap-1">
                         <button 
@@ -302,11 +351,17 @@ export default function Finance() {
             <Select label="Sección" value={form.section} onChange={(e) => setForm(f => ({ ...f, section: e.target.value }))}>
               {sections.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
             </Select>
-            <Input label="Fecha de inicio" type="date" value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} />
+            <Select label="Moneda" value={form.currency} onChange={(e) => setForm(f => ({ ...f, currency: e.target.value }))}>
+              {currencies.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+            </Select>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
+             <Input label="Fecha de inicio" type="date" value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} />
              <Input label="Cliente" value={form.client} onChange={(e) => setForm(f => ({ ...f, client: e.target.value }))} placeholder="Nombre del cliente" />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
              <Input label="Responsable" value={form.responsible} onChange={(e) => setForm(f => ({ ...f, responsible: e.target.value }))} placeholder="Eze, Gusti, Ale..." />
           </div>
           

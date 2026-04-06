@@ -167,7 +167,11 @@ export function useMessages(agentId, contactId) {
   useEffect(() => { fetchMessages() }, [fetchMessages])
 
   const addMessage = (msg) => {
-    setMessages(prev => [...prev, msg])
+    setMessages(prev => {
+      // Evitar duplicados por ID
+      if (prev.some(m => m.id === msg.id)) return prev
+      return [...prev, msg]
+    })
   }
 
   return { messages, loading, refetch: fetchMessages, addMessage }
