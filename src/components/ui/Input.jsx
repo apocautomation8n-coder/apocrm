@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, isValidElement } from 'react'
 
 const Input = forwardRef(({ label, error, icon: Icon, className = '', ...props }, ref) => {
   return (
@@ -11,7 +11,7 @@ const Input = forwardRef(({ label, error, icon: Icon, className = '', ...props }
       <div className="relative">
         {Icon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500">
-            {typeof Icon === 'function' ? <Icon size={16} /> : Icon}
+            {isValidElement(Icon) ? Icon : <Icon size={16} />}
           </div>
         )}
         <input
