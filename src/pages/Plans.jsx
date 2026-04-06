@@ -11,6 +11,11 @@ import toast from 'react-hot-toast'
 
 const statusColors = { activo: 'green', pausado: 'yellow', cancelado: 'red' }
 const statusLabels = { activo: 'Activo', pausado: 'Pausado', cancelado: 'Cancelado' }
+const currencies = [
+  { code: 'ARS', symbol: '$', label: 'Pesos (ARS)' },
+  { code: 'USD', symbol: '$', label: 'Dólares (USD)' },
+  { code: 'EUR', symbol: '€', label: 'Euros (EUR)' },
+]
 
 export default function Plans() {
   const [plans, setPlans] = useState([])
@@ -18,7 +23,7 @@ export default function Plans() {
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({
-    client_name: '', freelancer: '', monthly_fee: '', freelancer_fee: '0', expenses: '0', status: 'activo', notes: '',
+    client_name: '', freelancer: '', monthly_fee: '', freelancer_fee: '0', expenses: '0', status: 'activo', notes: '', currency: 'USD'
   })
 
   const fetchPlans = async () => {
@@ -31,19 +36,33 @@ export default function Plans() {
 
   useEffect(() => { fetchPlans() }, [])
 
-  const totals = useMemo(() => {
-    const active = plans.filter(p => p.status === 'activo')
-    const mrr = active.reduce((s, p) => s + Number(p.monthly_fee), 0)
-    const netProfit = active.reduce((s, p) => s + (Number(p.monthly_fee) - Number(p.freelancer_fee) - Number(p.expenses)), 0)
-    return { mrr, netProfit, activeCount: active.length }
-  }, [plans])
+  const totalsByCurrency = useMemo(() => {
+    return currencies.map(c => {
+      const active = plans.filter(p => p.status === 'activo' && (p.currency || 'USD') === c.code)
+      const allInCurrency = plans.filter(p => (p.currency || 'USD') === c.code)
+      
+      const mrr = active.reduce((s, p) => s + Number(p.monthly_fee), 0)
+      const netProfitCurrent = active.reduce((s, p) => s + (Number(p.monthly_fee) - Number(p.freelancer_fee) - Number(p.expenses)), 0)
+      
+      const colMonthly = allInCurrency.reduce((s, p) => s + Number(p.monthly_fee), 0)
+      const colFreelancer = allInCurrency.reduce((s, p) => s + Number(p.freelancer_fee), 0)
+      const colExpenses = allInCurrency.reduce((s, p) => s + Number(p.expenses), 0)
+      const colNetProfit = allInCurrency.reduce((s, p) => s + (Number(p.monthly_fee) - Number(p.freelancer_fee) - Number(p.expenses)), 0)
 
-  const colTotals = useMemo(() => ({
-    monthly_fee: plans.reduce((s, p) => s + Number(p.monthly_fee), 0),
-    freelancer_fee: plans.reduce((s, p) => s + Number(p.freelancer_fee), 0),
-    expenses: plans.reduce((s, p) => s + Number(p.expenses), 0),
-    net_profit: plans.reduce((s, p) => s + (Number(p.monthly_fee) - Number(p.freelancer_fee) - Number(p.expenses)), 0),
-  }), [plans])
+      return {
+        ...c,
+        mrr,
+        netProfit: netProfitCurrent,
+        activeCount: active.length,
+        colTotals: {
+          monthly_fee: colMonthly,
+          freelancer_fee: colFreelancer,
+          expenses: colExpenses,
+          net_profit: colNetProfit
+        }
+      }
+    }).filter(t => t.activeCount > 0 || t.colTotals.monthly_fee > 0)
+  }, [plans])
 
   const handleSave = async () => {
     if (!form.client_name.trim() || !form.monthly_fee) return toast.error('Nombre y cobro mensual son obligatorios')
@@ -55,6 +74,7 @@ export default function Plans() {
       freelancer_fee: parseFloat(form.freelancer_fee) || 0,
       expenses: parseFloat(form.expenses) || 0,
       status: form.status,
+      currency: form.currency || 'USD',
       notes: form.notes || null,
     }
 
@@ -89,7 +109,7 @@ export default function Plans() {
   const closeModal = () => {
     setShowModal(false)
     setEditing(null)
-    setForm({ client_name: '', freelancer: '', monthly_fee: '', freelancer_fee: '0', expenses: '0', status: 'activo', notes: '' })
+    setForm({ client_name: '', freelancer: '', monthly_fee: '', freelancer_fee: '0', expenses: '0', status: 'activo', notes: '', currency: 'USD' })
   }
 
   return (
@@ -109,11 +129,43 @@ export default function Plans() {
         </Button>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard label="MRR Total" value={`$${totals.mrr.toLocaleString()}`} icon={DollarSign} color="primary" />
-        <StatCard label="Ganancia Limpia" value={`$${totals.netProfit.toLocaleString()}`} icon={TrendingUp} color="success" />
-        <StatCard label="Clientes Activos" value={totals.activeCount} icon={Users} color="accent" />
+      {/* KPI Cards (per currency) */}
+      <div className="space-y-6">
+        {totalsByCurrency.map(t => (
+          <div key={t.code} className="space-y-3">
+            <div className="flex items-center gap-2 px-1">
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                t.code === 'USD' ? 'bg-emerald-500' : t.code === 'EUR' ? 'bg-amber-400' : 'bg-primary-500'
+              }`} />
+              <span className="text-xs font-bold text-surface-400 uppercase tracking-wider">Totales en {t.label}</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <StatCard 
+                label="MRR Total" 
+                value={
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[10px] font-bold opacity-70">{t.code}</span>
+                    <span>{t.symbol}{t.mrr.toLocaleString()}</span>
+                  </div>
+                } 
+                icon={DollarSign} 
+                color="primary" 
+              />
+              <StatCard 
+                label="Ganancia Neta" 
+                value={
+                  <div className="flex items-baseline gap-1 text-emerald-400 font-bold">
+                    <span className="text-[10px] opacity-70">{t.code}</span>
+                    <span>{t.symbol}{t.netProfit.toLocaleString()}</span>
+                  </div>
+                } 
+                icon={TrendingUp} 
+                color="success" 
+              />
+              <StatCard label="Clientes Activos" value={t.activeCount} icon={Users} color="accent" />
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Table */}
@@ -144,11 +196,29 @@ export default function Plans() {
                     <tr key={plan.id} className="border-b border-surface-800/30 hover:bg-surface-800/30 transition-colors">
                       <td className="px-5 py-3.5 text-surface-200 font-medium">{plan.client_name}</td>
                       <td className="px-5 py-3.5 text-surface-400">{plan.freelancer || '—'}</td>
-                      <td className="px-5 py-3.5 text-right text-surface-200">${Number(plan.monthly_fee).toLocaleString()}</td>
-                      <td className="px-5 py-3.5 text-right text-surface-400">${Number(plan.freelancer_fee).toLocaleString()}</td>
-                      <td className="px-5 py-3.5 text-right text-surface-400">${Number(plan.expenses).toLocaleString()}</td>
+                      <td className="px-5 py-3.5 text-right text-surface-200">
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="text-[10px] font-bold opacity-70">{plan.currency || 'USD'}</span>
+                          <span>{currencies.find(c => c.code === (plan.currency || 'USD'))?.symbol}{Number(plan.monthly_fee).toLocaleString()}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-right text-surface-400">
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="text-[10px] font-bold opacity-70">{plan.currency || 'USD'}</span>
+                          <span>{currencies.find(c => c.code === (plan.currency || 'USD'))?.symbol}{Number(plan.freelancer_fee).toLocaleString()}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-right text-surface-400">
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="text-[10px] font-bold opacity-70">{plan.currency || 'USD'}</span>
+                          <span>{currencies.find(c => c.code === (plan.currency || 'USD'))?.symbol}{Number(plan.expenses).toLocaleString()}</span>
+                        </div>
+                      </td>
                       <td className={`px-5 py-3.5 text-right font-semibold ${netProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        ${netProfit.toLocaleString()}
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="text-[10px] font-bold opacity-70">{plan.currency || 'USD'}</span>
+                          <span>{currencies.find(c => c.code === (plan.currency || 'USD'))?.symbol}{netProfit.toLocaleString()}</span>
+                        </div>
                       </td>
                       <td className="px-5 py-3.5 text-center">
                         <select
@@ -179,6 +249,7 @@ export default function Plans() {
                                 freelancer_fee: String(plan.freelancer_fee),
                                 expenses: String(plan.expenses),
                                 status: plan.status,
+                                currency: plan.currency || 'USD',
                                 notes: plan.notes || '',
                               })
                               setShowModal(true)
@@ -199,17 +270,37 @@ export default function Plans() {
                   )
                 })}
 
-                {/* Totals row */}
-                <tr className="bg-surface-800/40 border-t-2 border-surface-700/50">
-                  <td className="px-5 py-3.5 text-surface-200 font-bold" colSpan={2}>TOTAL</td>
-                  <td className="px-5 py-3.5 text-right text-surface-100 font-bold">${colTotals.monthly_fee.toLocaleString()}</td>
-                  <td className="px-5 py-3.5 text-right text-surface-300 font-bold">${colTotals.freelancer_fee.toLocaleString()}</td>
-                  <td className="px-5 py-3.5 text-right text-surface-300 font-bold">${colTotals.expenses.toLocaleString()}</td>
-                  <td className={`px-5 py-3.5 text-right font-bold ${colTotals.net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    ${colTotals.net_profit.toLocaleString()}
-                  </td>
-                  <td colSpan={2}></td>
-                </tr>
+                {/* Currency Table Totals */}
+                {totalsByCurrency.map(t => (
+                  <tr key={t.code} className="bg-surface-800/20 border-t border-surface-700/50">
+                    <td className="px-5 py-3 text-surface-400 font-bold" colSpan={2}>SUBTOTAL ({t.label})</td>
+                    <td className="px-5 py-3 text-right text-surface-200 font-bold">
+                      <div className="flex items-center justify-end gap-1">
+                        <span className="text-[10px] opacity-70">{t.code}</span>
+                        <span>{t.symbol}{t.colTotals.monthly_fee.toLocaleString()}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-right text-surface-400 font-bold">
+                      <div className="flex items-center justify-end gap-1">
+                        <span className="text-[10px] opacity-70">{t.code}</span>
+                        <span>{t.symbol}{t.colTotals.freelancer_fee.toLocaleString()}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-right text-surface-400 font-bold">
+                      <div className="flex items-center justify-end gap-1">
+                        <span className="text-[10px] opacity-70">{t.code}</span>
+                        <span>{t.symbol}{t.colTotals.expenses.toLocaleString()}</span>
+                      </div>
+                    </td>
+                    <td className={`px-5 py-3 text-right font-bold ${t.colTotals.net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <div className="flex items-center justify-end gap-1">
+                        <span className="text-[10px] opacity-70">{t.code}</span>
+                        <span>{t.symbol}{t.colTotals.net_profit.toLocaleString()}</span>
+                      </div>
+                    </td>
+                    <td colSpan={2}></td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -221,16 +312,21 @@ export default function Plans() {
         <div className="space-y-4">
           <Input label="Cliente" value={form.client_name} onChange={(e) => setForm(f => ({ ...f, client_name: e.target.value }))} placeholder="Nombre del cliente" />
           <Input label="Freelancer" value={form.freelancer} onChange={(e) => setForm(f => ({ ...f, freelancer: e.target.value }))} placeholder="Nombre (opcional)" />
-          <div className="grid grid-cols-3 gap-3">
-            <Input label="Cobro Mensual (USD)" type="number" value={form.monthly_fee} onChange={(e) => setForm(f => ({ ...f, monthly_fee: e.target.value }))} placeholder="0" />
-            <Input label="Freelancer (USD)" type="number" value={form.freelancer_fee} onChange={(e) => setForm(f => ({ ...f, freelancer_fee: e.target.value }))} placeholder="0" />
-            <Input label="Gastos (USD)" type="number" value={form.expenses} onChange={(e) => setForm(f => ({ ...f, expenses: e.target.value }))} placeholder="0" />
+          <div className="grid grid-cols-2 gap-3">
+            <Select label="Moneda" value={form.currency} onChange={(e) => setForm(f => ({ ...f, currency: e.target.value }))}>
+              {currencies.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+            </Select>
+            <Select label="Estado" value={form.status} onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))}>
+              <option value="activo">Activo</option>
+              <option value="pausado">Pausado</option>
+              <option value="cancelado">Cancelado</option>
+            </Select>
           </div>
-          <Select label="Estado" value={form.status} onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))}>
-            <option value="activo">Activo</option>
-            <option value="pausado">Pausado</option>
-            <option value="cancelado">Cancelado</option>
-          </Select>
+          <div className="grid grid-cols-3 gap-3">
+            <Input label="Cobro Mensual" type="number" value={form.monthly_fee} onChange={(e) => setForm(f => ({ ...f, monthly_fee: e.target.value }))} placeholder="0" />
+            <Input label="Freelancer" type="number" value={form.freelancer_fee} onChange={(e) => setForm(f => ({ ...f, freelancer_fee: e.target.value }))} placeholder="0" />
+            <Input label="Gastos" type="number" value={form.expenses} onChange={(e) => setForm(f => ({ ...f, expenses: e.target.value }))} placeholder="0" />
+          </div>
           <Input label="Notas" value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notas opcionales..." />
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={closeModal}>Cancelar</Button>

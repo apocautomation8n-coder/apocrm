@@ -10,6 +10,7 @@ import Calendar from './pages/Calendar'
 import Finance from './pages/Finance'
 import Plans from './pages/Plans'
 import Users from './pages/Users'
+import CurrencyConverter from './pages/CurrencyConverter'
 import { useLocation } from 'react-router-dom'
 
 function ProtectedRoute({ children }) {
@@ -55,6 +56,7 @@ export default function App() {
       <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
       <Route path="/finance" element={<ProtectedRoute><Finance /></ProtectedRoute>} />
       <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
+      <Route path="/converter" element={<ProtectedRoute><CurrencyConverter /></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to={user?.allowed_views?.[0] || "/agents"} replace />} />
     </Routes>

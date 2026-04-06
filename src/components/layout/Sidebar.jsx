@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  Calculator,
 } from 'lucide-react'
 
 const navItems = [
@@ -24,6 +25,7 @@ const navItems = [
   { to: '/calendar',  icon: CalendarDays,  label: 'Calendario' },
   { to: '/finance',   icon: DollarSign,    label: 'Finanzas' },
   { to: '/plans',     icon: CreditCard,    label: 'Mensualidades' },
+  { to: '/converter', icon: Calculator,    label: 'Conversión de Capital' },
   { to: '/users',     icon: Zap,           label: 'Usuarios' },
 ]
 

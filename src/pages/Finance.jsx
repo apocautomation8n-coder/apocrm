@@ -219,13 +219,6 @@ export default function Finance() {
                   'bg-primary-500'
                 }`} />
                 <span className="text-xs font-bold text-surface-400 uppercase tracking-wider">Totales en {c.label}</span>
-                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-tighter ${
-                  c.code === 'USD' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                  c.code === 'EUR' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                  'bg-primary-500/10 text-primary-400 border-primary-500/20'
-                }`}>
-                  {c.code === 'USD' ? 'Premium' : c.code === 'EUR' ? 'Global' : 'Local'}
-                </span>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard 

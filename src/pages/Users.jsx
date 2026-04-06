@@ -15,6 +15,7 @@ const VIEW_LABELS = {
   '/calendar': 'Calendario',
   '/finance': 'Finanzas',
   '/plans': 'Mensualidades',
+  '/converter': 'Conversión de Capital',
   '/users': 'Usuarios'
 }
 
