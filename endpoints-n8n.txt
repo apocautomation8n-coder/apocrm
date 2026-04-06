@@ -24,6 +24,7 @@ Recuerda reemplazar "https://apoc-crm.vercel.app" con el dominio verde final que
 2. ROUTER / STATUS (n8n -> CRM) | "Permiso para la IA"
 --------------------------------------------------------------
 * Uso: Un nodo HTTP Request tipo GET, que ponés ANTES del nodo de OpenAI / ChatGPT. Te dice si el bot está prendido o apagado en el CRM.
+* NOTA: Este estado ahora es INDIVIDUAL por cada chat. Si lo apagas en el CRM para ese cliente, aquí dará FALSE.
 * Método: GET
 * URL: https://apoc-crm.vercel.app/api/agents/status?phone={{numero_del_cliente}}
 
@@ -66,7 +67,27 @@ Vas a poner un IF o Switch que lea de este nodo el parámetro "bot_enabled".
 * URL: https://apoc-crm.vercel.app/api/contacts/check/{{numero_del_cliente}}
 
 --------------------------------------------------------------
-6. OUTBOUND HUMANOS (CRM -> n8n) | "Escribir desde el CRM"
+6. VALIDAR CONVERSACIÓN (n8n -> CRM) | "Check Chat Status"
+--------------------------------------------------------------
+* Uso: Para saber si un número ya tiene mensajes previos y si el bot está activo para él específicamente.
+* Método: GET
+* URL: https://apoc-crm.vercel.app/api/contacts/check-conversation/{{numero_del_cliente}}
+* Respuesta: { "exists": true, "hasMessages": true, "bot_enabled": true }
+
+--------------------------------------------------------------
+7. FORZAR APERTURA DE CHAT (n8n -> CRM) | "Open Conversation"
+--------------------------------------------------------------
+* Uso: Utilízalo para asegurar que un contacto esté creado en el CRM antes de mandar el primer mensaje outbound desde n8n.
+* Método: POST
+* URL: https://apoc-crm.vercel.app/api/contacts/open-conversation
+* JSON Body:
+{
+  "phone": "54911...",
+  "name": "Nombre opcional"
+}
+
+--------------------------------------------------------------
+8. OUTBOUND HUMANOS (CRM -> n8n) | "Escribir desde el CRM"
 --------------------------------------------------------------
 * Uso: Para que vos puedas contestar. En tu Panel de Vercel configuraste la variable "VITE_N8N_WEBHOOK". Esa URL tiene que apuntar a un Webhook Receptor en n8n.
 * Lo que reciba tu n8n ahí, va y se lo pasás al nodo de mandar de Evolution API.

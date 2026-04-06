@@ -89,4 +89,73 @@ router.get('/:phone', async (req, res) => {
   }
 })
 
+// GET /api/contacts/check-conversation/:phone — check if a conversation exists
+router.get('/check-conversation/:phone', async (req, res) => {
+  try {
+    const { phone } = req.params
+
+    // 1. Find contact
+    const { data: contact } = await supabase
+      .from('contacts')
+      .select('id, bot_enabled')
+      .eq('phone', phone)
+      .single()
+
+    if (!contact) {
+      return res.json({ exists: false, hasMessages: false })
+    }
+
+    // 2. Check for messages
+    const { count, error: msgError } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('contact_id', contact.id)
+
+    res.json({
+      exists: true,
+      hasMessages: (count || 0) > 0,
+      contactId: contact.id,
+      bot_enabled: contact.bot_enabled
+    })
+  } catch (err) {
+    console.error('Check conversation error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// POST /api/contacts/open-conversation — ensure a contact exists and is ready
+router.post('/open-conversation', async (req, res) => {
+  try {
+    const { phone, name, agent_id } = req.body
+
+    if (!phone) {
+      return res.status(400).json({ error: 'phone is required' })
+    }
+
+    // 1. Find or create contact
+    let { data: contact } = await supabase
+      .from('contacts')
+      .select('id')
+      .eq('phone', phone)
+      .single()
+
+    if (!contact) {
+      const { data: newContact, error: createErr } = await supabase
+        .from('contacts')
+        .insert({ phone, name: name || null, bot_enabled: true })
+        .select('id')
+        .single()
+      
+      if (createErr) throw createErr
+      contact = newContact
+    }
+
+    // Log the event or just return
+    res.json({ success: true, contactId: contact.id })
+  } catch (err) {
+    console.error('Open conversation error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 export default router

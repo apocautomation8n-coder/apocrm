@@ -74,7 +74,7 @@ export function useConversations(agentId) {
         media_type,
         timestamp,
         is_read,
-        contacts (id, name, phone)
+        contacts (id, name, phone, bot_enabled)
       `)
       .eq('agent_id', agentId)
       .order('timestamp', { ascending: false })
@@ -112,9 +112,24 @@ export function useConversations(agentId) {
     setLoading(false)
   }, [agentId])
 
+  const toggleContactBot = async (contactId, enabled) => {
+    const { error } = await supabase
+      .from('contacts')
+      .update({ bot_enabled: enabled })
+      .eq('id', contactId)
+    if (error) {
+      toast.error('Error actualizando estado del bot')
+    } else {
+      setConversations(prev => prev.map(c => 
+        c.contact.id === contactId ? { ...c, contact: { ...c.contact, bot_enabled: enabled } } : c
+      ))
+      toast.success(enabled ? 'Bot activado para este contacto' : 'Bot desactivado para este contacto')
+    }
+  }
+
   useEffect(() => { fetchConversations() }, [fetchConversations])
 
-  return { conversations, loading, refetch: fetchConversations }
+  return { conversations, loading, refetch: fetchConversations, toggleContactBot }
 }
 
 export function useMessages(agentId, contactId) {

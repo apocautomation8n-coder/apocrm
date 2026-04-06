@@ -1,6 +1,7 @@
-import { User, Phone, X } from 'lucide-react'
+import { User, Phone, X, Bot } from 'lucide-react'
+import Toggle from '../ui/Toggle'
 
-export default function ContactPanel({ contact, onClose }) {
+export default function ContactPanel({ contact, onClose, onToggleBot }) {
   if (!contact) return null
 
   return (
@@ -41,6 +42,23 @@ export default function ContactPanel({ contact, onClose }) {
             <div>
               <p className="text-[10px] uppercase tracking-wider text-surface-500 font-medium">Teléfono</p>
               <p className="text-sm text-surface-200">{contact.phone}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-800/50">
+            <Bot size={16} className="text-surface-500 shrink-0" />
+            <div className="flex-1">
+              <p className="text-[10px] uppercase tracking-wider text-surface-500 font-medium">Estado del Bot</p>
+              <div className="flex items-center justify-between mt-1">
+                <span className={`text-[10px] font-medium uppercase tracking-wider ${contact.bot_enabled ? 'text-emerald-400' : 'text-surface-500'}`}>
+                  {contact.bot_enabled ? 'Activado' : 'Desactivado'}
+                </span>
+                <Toggle
+                  enabled={contact.bot_enabled ?? true}
+                  onChange={(val) => onToggleBot?.(contact.id, val)}
+                  size="sm"
+                />
+              </div>
             </div>
           </div>
         </div>

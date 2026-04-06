@@ -3,9 +3,10 @@ import MessageBubble from './MessageBubble'
 import MessageInput from './MessageInput'
 import { useMessages } from '../../hooks/useMessages'
 import { useRealtime } from '../../hooks/useRealtime'
-import { MessageSquare } from 'lucide-react'
+import { MessageSquare, Bot } from 'lucide-react'
+import Toggle from '../ui/Toggle'
 
-export default function ChatWindow({ agent, contact }) {
+export default function ChatWindow({ agent, contact, onToggleBot }) {
   const { messages, loading, addMessage } = useMessages(agent?.id, contact?.id)
   const bottomRef = useRef(null)
 
@@ -37,13 +38,27 @@ export default function ChatWindow({ agent, contact }) {
   return (
     <div className="flex-1 flex flex-col min-w-0">
       {/* Chat header */}
-      <div className="px-5 py-3 border-b border-surface-800/60 bg-surface-900/80 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
-          {(contact.name || contact.phone || '?')[0].toUpperCase()}
+      <div className="px-5 py-3 border-b border-surface-800/60 bg-surface-900/80 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+            {(contact.name || contact.phone || '?')[0].toUpperCase()}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-surface-100">{contact.name || contact.phone}</p>
+            <p className="text-xs text-surface-500">{contact.phone}</p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-semibold text-surface-100">{contact.name || contact.phone}</p>
-          <p className="text-xs text-surface-500">{contact.phone}</p>
+
+        <div className="flex items-center gap-2">
+          <Bot size={16} className={contact.bot_enabled ? 'text-emerald-400' : 'text-surface-500'} />
+          <Toggle
+            enabled={contact.bot_enabled ?? true}
+            onChange={(val) => onToggleBot?.(contact.id, val)}
+            size="sm"
+          />
+          <span className={`text-[10px] font-medium uppercase tracking-wider ${contact.bot_enabled ? 'text-emerald-400' : 'text-surface-500'}`}>
+            {contact.bot_enabled ? 'Bot ON' : 'Bot OFF'}
+          </span>
         </div>
       </div>
 

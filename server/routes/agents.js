@@ -40,7 +40,7 @@ router.get('/status', async (req, res) => {
     // Get agent info
     const { data: agent } = await supabase
       .from('agents')
-      .select('slug, bot_enabled')
+      .select('slug')
       .eq('id', lastMsg.agent_id)
       .single()
 
@@ -48,10 +48,17 @@ router.get('/status', async (req, res) => {
       return res.status(404).json({ error: 'Agent not found' })
     }
 
+    // Get contact bot status
+    const { data: contactStatus } = await supabase
+      .from('contacts')
+      .select('bot_enabled')
+      .eq('id', contact.id)
+      .single()
+
     res.json({
       phone,
       agent_slug: agent.slug,
-      bot_enabled: agent.bot_enabled,
+      bot_enabled: contactStatus?.bot_enabled ?? true,
     })
   } catch (err) {
     console.error('Agent status error:', err)

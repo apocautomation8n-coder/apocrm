@@ -21,7 +21,10 @@ export default function OutboundAgents() {
   const [search, setSearch] = useState('')
 
   const activeAgent = selectedAgent || agents[0]
-  const { conversations, loading: convsLoading, refetch } = useConversations(activeAgent?.id)
+  const { conversations, loading: convsLoading, refetch, toggleContactBot } = useConversations(activeAgent?.id)
+
+  // Sync selectedContact with latest data from conversations (important for bot_enabled status)
+  const currentContact = conversations.find(c => c.contact?.id === selectedContact?.id)?.contact || selectedContact
 
   // Realtime: refresh conversations on new messages
   useRealtime('messages', null, () => {
@@ -101,17 +104,6 @@ export default function OutboundAgents() {
 
         {activeAgent && (
           <div className="flex items-center gap-4 shrink-0">
-            <div className="flex items-center gap-2">
-              <Bot size={16} className={activeAgent.bot_enabled ? 'text-emerald-400' : 'text-surface-500'} />
-              <Toggle
-                enabled={activeAgent.bot_enabled}
-                onChange={(val) => toggleBot(activeAgent.id, val)}
-                size="sm"
-              />
-              <span className={`text-xs font-medium ${activeAgent.bot_enabled ? 'text-emerald-400' : 'text-surface-500'}`}>
-                {activeAgent.bot_enabled ? 'Bot ON' : 'Bot OFF'}
-              </span>
-            </div>
             <button
               onClick={() => setShowContactPanel(!showContactPanel)}
               className="p-2 text-surface-400 hover:text-surface-200 hover:bg-surface-800/50 rounded-lg transition-all cursor-pointer"
@@ -140,7 +132,7 @@ export default function OutboundAgents() {
           </div>
           <ConversationList
             conversations={filteredConversations}
-            selectedContactId={selectedContact?.id}
+            selectedContactId={currentContact?.id}
             onSelect={setSelectedContact}
             onDelete={handleDeleteConversation}
             loading={convsLoading}
@@ -148,13 +140,18 @@ export default function OutboundAgents() {
         </div>
 
         {/* Chat window */}
-        <ChatWindow agent={activeAgent} contact={selectedContact} />
+        <ChatWindow 
+          agent={activeAgent} 
+          contact={currentContact} 
+          onToggleBot={toggleContactBot}
+        />
 
         {/* Contact panel */}
-        {showContactPanel && selectedContact && (
+        {showContactPanel && currentContact && (
           <ContactPanel
-            contact={selectedContact}
+            contact={currentContact}
             onClose={() => setShowContactPanel(false)}
+            onToggleBot={toggleContactBot}
           />
         )}
       </div>
