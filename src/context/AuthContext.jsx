@@ -23,7 +23,7 @@ export function AuthProvider({ children }) {
           .from('profiles')
           .select('*')
           .eq('id', sessionUser.id)
-          .single()
+          .maybeSingle()
 
         if (error || !profile) {
           // If profile doesn't exist, provide default permissions so the user isn't locked out immediately
