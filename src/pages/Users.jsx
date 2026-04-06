@@ -5,7 +5,7 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
-import { API_URL } from '../lib/api'
+import { supabase } from '../lib/supabaseClient'
 
 const VIEW_LABELS = {
   '/agents': 'Agentes Outbound',
@@ -37,9 +37,13 @@ export default function Users() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/users`)
-      const data = await res.json()
-      setUsers(data)
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      setUsers(data || [])
     } catch (err) {
       console.error('Error fetching users:', err)
     } finally {
@@ -50,7 +54,7 @@ export default function Users() {
   const handleCreateUser = async (e) => {
     e.preventDefault()
     try {
-      const res = await fetch(`${API_URL}/api/users`, {
+      const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newUser)
@@ -70,7 +74,7 @@ export default function Users() {
   const toggleView = (userId, viewPath) => {
     const user = users.find(u => u.id === userId)
     if (!user) return
- 
+
     const newViews = user.allowed_views.includes(viewPath)
       ? user.allowed_views.filter(v => v !== viewPath)
       : [...user.allowed_views, viewPath]
@@ -80,14 +84,13 @@ export default function Users() {
 
   const updateUserViews = async (id, allowed_views) => {
     try {
-      const res = await fetch(`${API_URL}/api/users/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ allowed_views })
-      })
-      if (res.ok) {
-        setUsers(users.map(u => u.id === id ? { ...u, allowed_views } : u))
-      }
+      const { error } = await supabase
+        .from('profiles')
+        .update({ allowed_views, updated_at: new Date() })
+        .eq('id', id)
+      
+      if (error) throw error
+      setUsers(users.map(u => u.id === id ? { ...u, allowed_views } : u))
     } catch (err) {
       console.error('Error updating views:', err)
     }
@@ -96,14 +99,17 @@ export default function Users() {
   const handleDeleteUser = async (id) => {
     if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) return
     try {
-      const res = await fetch(`${API_URL}/api/users/${id}`, {
+      const res = await fetch(`/api/users?id=${id}`, {
         method: 'DELETE'
       })
       if (res.ok) {
         setUsers(users.filter(u => u.id !== id))
+      } else {
+        const err = await res.json()
+        throw new Error(err.error || 'Error deleting user')
       }
     } catch (err) {
-      console.error('Error deleting user:', err)
+      alert(err.message)
     }
   }
 
