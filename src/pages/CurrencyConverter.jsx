@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calculator, RefreshCw, ArrowRightLeft, TrendingUp, TrendingDown, Clock } from 'lucide-react'
+import { Calculator, RefreshCw, ArrowRightLeft, TrendingUp, TrendingDown, Clock, DollarSign } from 'lucide-react'
 import { StatCard } from '../components/ui/Card'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'

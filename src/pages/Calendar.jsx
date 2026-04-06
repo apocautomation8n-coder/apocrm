@@ -68,8 +68,10 @@ export default function Calendar() {
     day = addDays(day, 1)
   }
 
-  const getEventsForDay = (date) =>
-    events.filter(e => isSameDay(new Date(e.date), date))
+  const getEventsForDay = (date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    return events.filter(e => e.date === dateStr)
+  }
 
   const handleSave = async () => {
     if (!form.title.trim() || !form.date) return toast.error('Título y fecha son obligatorios')
@@ -88,29 +90,34 @@ export default function Calendar() {
       if (error) return toast.error('Error actualizando evento')
       toast.success('Evento actualizado')
     } else {
-      const { error } = await supabase.from('calendar_events').insert(payload)
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .insert(payload)
+        .select()
+        .single()
+
       if (error) {
-        // Table might not exist, let's handle gracefully
         if (error.message?.includes('does not exist') || error.code === '42P01') {
-          toast.error('Tabla calendar_events no existe. Ejecutá el SQL adicional.')
+          toast.error('Tabla calendar_events no existe.')
         } else {
           toast.error('Error creando evento')
         }
         return
       }
 
+      const createdId = data.id
+
       // Send webhook to n8n to generate Meet link and email
       try {
         const response = await fetch('https://automation8n.fluxia.site/webhook/e64e181f-b3f4-4e02-b6c3-6c5f126a39ab', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload, event_id: createdId }) // passing ID if needed
+          body: JSON.stringify({ ...payload, event_id: createdId })
         })
         
         if (response.ok) {
-          const data = await response.json()
-          // If webhook returns a link, update the record
-          const link = data.meet_link || data.link || data.url
+          const resData = await response.json()
+          const link = resData.meet_link || resData.link || resData.url
           if (link) {
             await supabase.from('calendar_events').update({ meet_link: link }).eq('id', createdId)
             toast.success('Link de Meet generado e integrado')

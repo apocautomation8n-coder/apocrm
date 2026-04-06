@@ -128,7 +128,8 @@ export default function Contacts() {
               <thead>
                 <tr className="border-b border-surface-800/60">
                   <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Nombre</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Teléfono / Email</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Teléfono</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Email</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Fecha</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-surface-400 uppercase tracking-wider">Acciones</th>
                 </tr>
@@ -144,11 +145,15 @@ export default function Contacts() {
                         <span className="text-surface-200 font-medium">{contact.name || 'Sin nombre'}</span>
                       </div>
                     </td>
+                    <td className="px-5 py-3.5 text-surface-300 font-mono text-xs">{contact.phone}</td>
                     <td className="px-5 py-3.5">
-                      <div className="text-surface-300">{contact.phone}</div>
-                      {contact.email && <div className="text-xs text-surface-500">{contact.email}</div>}
+                      {contact.email ? (
+                        <span className="text-xs text-surface-400">{contact.email}</span>
+                      ) : (
+                        <span className="text-[10px] text-surface-600 italic">No registrado</span>
+                      )}
                     </td>
-                    <td className="px-5 py-3.5 text-surface-400">{format(new Date(contact.created_at), 'dd/MM/yyyy')}</td>
+                    <td className="px-5 py-3.5 text-surface-400 text-xs">{format(new Date(contact.created_at), 'dd/MM/yyyy')}</td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center justify-end gap-1">
                         <button
