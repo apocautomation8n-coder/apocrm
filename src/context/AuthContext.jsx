@@ -25,15 +25,23 @@ export function AuthProvider({ children }) {
           .eq('id', sessionUser.id)
           .maybeSingle()
 
+        const allViews = ['/agents', '/metrics', '/contacts', '/pipeline', '/calendar', '/finance', '/plans', '/converter', '/users']
+        
         if (error || !profile) {
-          // If profile doesn't exist, provide default permissions so the user isn't locked out immediately
-          // but we might want to log this or handle it better.
+          // If profile doesn't exist, provide default permissions
           setUser({
             ...sessionUser,
-            allowed_views: ['/agents', '/metrics', '/contacts', '/pipeline', '/calendar', '/finance', '/plans', '/users']
+            allowed_views: sessionUser.email === 'apoc@apocautomation.site' ? allViews : allViews.filter(v => v !== '/users')
           })
         } else {
-          setUser({ ...sessionUser, ...profile })
+          // Ensure main account always has all views
+          const userProfile = { ...sessionUser, ...profile }
+          if (sessionUser.email === 'apoc@apocautomation.site') {
+            userProfile.allowed_views = allViews
+          } else if (!userProfile.allowed_views) {
+            userProfile.allowed_views = allViews.filter(v => v !== '/users')
+          }
+          setUser(userProfile)
         }
       } catch (err) {
         console.error('Error fetching profile:', err)

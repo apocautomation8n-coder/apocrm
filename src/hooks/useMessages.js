@@ -177,7 +177,7 @@ export function useMessages(agentId, contactId) {
   return { messages, loading, refetch: fetchMessages, addMessage }
 }
 
-export async function sendOutboundMessage({ phone, agentSlug, agentId, contactId, message, mediaUrl, mediaType }) {
+export async function sendOutboundMessage({ phone, agentSlug, agentId, contactId, contactName, message, mediaUrl, mediaType }) {
   // 1) Send to n8n webhook
   try {
     await fetch(N8N_WEBHOOK, {
@@ -186,6 +186,7 @@ export async function sendOutboundMessage({ phone, agentSlug, agentId, contactId
       body: JSON.stringify({
         phone,
         agent_slug: agentSlug,
+        contact_name: contactName || '',
         message: message || '',
         media_url: mediaUrl || null,
         media_type: mediaType || 'text',

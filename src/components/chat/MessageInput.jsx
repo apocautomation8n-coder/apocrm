@@ -22,6 +22,7 @@ export default function MessageInput({ agentId, agentSlug, contact, onMessageSen
         agentSlug,
         agentId,
         contactId: contact.id,
+        contactName: contact.name,
         message: msg,
         mediaType: 'text',
       })
@@ -63,6 +64,7 @@ export default function MessageInput({ agentId, agentSlug, contact, onMessageSen
             agentSlug,
             agentId,
             contactId: contact.id,
+            contactName: contact.name,
             message: '',
             mediaUrl: publicUrl,
             mediaType: 'audio',
