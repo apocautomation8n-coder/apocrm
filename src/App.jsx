@@ -9,9 +9,12 @@ import Pipeline from './pages/Pipeline'
 import Calendar from './pages/Calendar'
 import Finance from './pages/Finance'
 import Plans from './pages/Plans'
+import Users from './pages/Users'
+import { useLocation } from 'react-router-dom'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -26,6 +29,13 @@ function ProtectedRoute({ children }) {
 
   if (!user) return <Navigate to="/login" replace />
 
+  // Permission check
+  const isAllowed = user.allowed_views?.includes(location.pathname)
+  if (!isAllowed && user.allowed_views?.length > 0) {
+    // Redirect to the first allowed view if the current one is not allowed
+    return <Navigate to={user.allowed_views[0]} replace />
+  }
+
   return <Layout>{children}</Layout>
 }
 
@@ -36,7 +46,7 @@ export default function App() {
     <Routes>
       <Route
         path="/login"
-        element={user && !loading ? <Navigate to="/agents" replace /> : <Login />}
+        element={user && !loading ? <Navigate to={user.allowed_views?.[0] || "/agents"} replace /> : <Login />}
       />
       <Route path="/agents" element={<ProtectedRoute><OutboundAgents /></ProtectedRoute>} />
       <Route path="/metrics" element={<ProtectedRoute><Metrics /></ProtectedRoute>} />
@@ -45,7 +55,8 @@ export default function App() {
       <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
       <Route path="/finance" element={<ProtectedRoute><Finance /></ProtectedRoute>} />
       <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
-      <Route path="*" element={<Navigate to="/agents" replace />} />
+      <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+      <Route path="*" element={<Navigate to={user?.allowed_views?.[0] || "/agents"} replace />} />
     </Routes>
   )
 }

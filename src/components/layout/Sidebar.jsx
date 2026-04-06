@@ -24,13 +24,19 @@ const navItems = [
   { to: '/calendar',  icon: CalendarDays,  label: 'Calendario' },
   { to: '/finance',   icon: DollarSign,    label: 'Finanzas' },
   { to: '/plans',     icon: CreditCard,    label: 'Mensualidades' },
+  { to: '/users',     icon: Zap,           label: 'Usuarios' },
 ]
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
-  const { signOut } = useAuth()
+  const { signOut, user } = useAuth()
   const location = useLocation()
+
+  // Filter items based on user permissions
+  const filteredItems = navItems.filter(item => 
+    user?.allowed_views?.includes(item.to)
+  )
 
   useEffect(() => {
     const fetchUnread = async () => {
@@ -77,7 +83,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
+        {filteredItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

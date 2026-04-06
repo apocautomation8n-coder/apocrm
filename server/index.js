@@ -6,6 +6,7 @@ import agentsRouter from './routes/agents.js'
 import sheetsRouter from './routes/sheets.js'
 import calendarRouter from './routes/calendar.js'
 import contactsRouter from './routes/contacts.js'
+import usersRouter from './routes/users.js'
 
 
 dotenv.config()
@@ -22,6 +23,7 @@ app.use('/api/agents', agentsRouter)
 app.use('/api/sheets', sheetsRouter)
 app.use('/api/calendar', calendarRouter)
 app.use('/api/contacts', contactsRouter)
+app.use('/api/users', usersRouter)
 
 
 // Health check
