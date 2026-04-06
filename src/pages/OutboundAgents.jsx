@@ -9,6 +9,7 @@ import Modal from '../components/ui/Modal'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import { Search, Plus, Bot, PanelRightOpen, PanelRightClose } from 'lucide-react'
+import { API_URL } from '../lib/api'
 
 export default function OutboundAgents() {
   const { agents, loading: agentsLoading, toggleBot, addAgent } = useAgents()
@@ -54,7 +55,7 @@ export default function OutboundAgents() {
   const handleAddContact = async () => {
     if (!newContactPhone.trim()) return
     try {
-      const res = await fetch('http://localhost:3001/api/contacts/open-conversation', {
+      const res = await fetch(`${API_URL}/api/contacts/open-conversation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

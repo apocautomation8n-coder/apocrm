@@ -5,6 +5,7 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
+import { API_URL } from '../lib/api'
 
 const VIEW_LABELS = {
   '/agents': 'Agentes Outbound',
@@ -36,7 +37,7 @@ export default function Users() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/users')
+      const res = await fetch(`${API_URL}/api/users`)
       const data = await res.json()
       setUsers(data)
     } catch (err) {
@@ -49,7 +50,7 @@ export default function Users() {
   const handleCreateUser = async (e) => {
     e.preventDefault()
     try {
-      const res = await fetch('http://localhost:3001/api/users', {
+      const res = await fetch(`${API_URL}/api/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newUser)
@@ -69,7 +70,7 @@ export default function Users() {
   const toggleView = (userId, viewPath) => {
     const user = users.find(u => u.id === userId)
     if (!user) return
-
+ 
     const newViews = user.allowed_views.includes(viewPath)
       ? user.allowed_views.filter(v => v !== viewPath)
       : [...user.allowed_views, viewPath]
@@ -79,7 +80,7 @@ export default function Users() {
 
   const updateUserViews = async (id, allowed_views) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/users/${id}`, {
+      const res = await fetch(`${API_URL}/api/users/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ allowed_views })
@@ -95,7 +96,7 @@ export default function Users() {
   const handleDeleteUser = async (id) => {
     if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) return
     try {
-      const res = await fetch(`http://localhost:3001/api/users/${id}`, {
+      const res = await fetch(`${API_URL}/api/users/${id}`, {
         method: 'DELETE'
       })
       if (res.ok) {
