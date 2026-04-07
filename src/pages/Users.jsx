@@ -13,6 +13,7 @@ const VIEW_LABELS = {
   '/contacts': 'Contactos',
   '/pipeline': 'Pipeline',
   '/calendar': 'Calendario',
+  '/followups': 'Seguimientos',
   '/finance': 'Finanzas',
   '/plans': 'Mensualidades',
   '/converter': 'Conversión de Capital',
