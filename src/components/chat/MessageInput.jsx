@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 export default function MessageInput({ agentId, agentSlug, contact, onMessageSent }) {
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [sendingTemplate, setSendingTemplate] = useState(false)
   const [recording, setRecording] = useState(false)
   const mediaRecorderRef = useRef(null)
   const chunksRef = useRef([])
@@ -38,6 +39,30 @@ export default function MessageInput({ agentId, agentSlug, contact, onMessageSen
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
+    }
+  }
+
+  const handleSendTemplate = async () => {
+    if (sendingTemplate) return
+    setSendingTemplate(true)
+
+    try {
+      const response = await fetch('https://automation8n.fluxia.site/webhook/86b4d2df-5fea-40c8-a121-26c51a92300c', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent_slug: agentSlug,
+          phone: contact.phone
+        })
+      })
+
+      if (!response.ok) throw new Error('Error al enviar plantilla')
+      toast.success('Plantilla de apertura enviada')
+    } catch (err) {
+      console.error(err)
+      toast.error('Error al enviar plantilla')
+    } finally {
+      setSendingTemplate(false)
     }
   }
 
@@ -110,7 +135,7 @@ export default function MessageInput({ agentId, agentSlug, contact, onMessageSen
         {/* Audio button */}
         <button
           onClick={recording ? stopRecording : startRecording}
-          disabled={sending || text.trim().length > 0}
+          disabled={sending || sendingTemplate || text.trim().length > 0}
           className={`
             p-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed
             ${recording
@@ -120,6 +145,16 @@ export default function MessageInput({ agentId, agentSlug, contact, onMessageSen
           `}
         >
           {recording ? <Square size={18} /> : <Mic size={18} />}
+        </button>
+
+        {/* Start template button */}
+        <button
+          onClick={handleSendTemplate}
+          disabled={sending || sendingTemplate}
+          className="px-3 py-2.5 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-600/30 transition-all duration-200 text-[10px] font-bold uppercase tracking-wider disabled:opacity-30"
+          title="Abrir ventana de 24hs con Meta"
+        >
+          {sendingTemplate ? <Loader2 size={14} className="animate-spin" /> : 'Abrir 24h'}
         </button>
 
         {/* Send button */}

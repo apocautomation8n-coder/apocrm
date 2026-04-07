@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import supabase from '../supabaseAdmin.js'
+import { sendSuccess, sendError } from '../utils.js'
 
 const router = Router()
 
@@ -12,20 +13,20 @@ router.get('/', async (req, res) => {
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    res.json(data)
+    return sendSuccess(res, data)
   } catch (err) {
-    console.error('Error fetching users:', err)
-    res.status(500).json({ error: 'Internal server error' })
+    return sendError(res, err)
   }
 })
 
 // POST /api/users - Create a new user (Auth + Profile)
 router.post('/', async (req, res) => {
+  let userId = null
   try {
     const { email, password, full_name, allowed_views } = req.body
 
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' })
+      return sendError(res, 'Email and password are required', 400)
     }
 
     // 1. Create user in Supabase Auth (using Service Role Client)
@@ -37,11 +38,10 @@ router.post('/', async (req, res) => {
     })
 
     if (authError) {
-      console.error('Auth creation error:', authError)
-      return res.status(400).json({ error: authError.message })
+      return sendError(res, authError.message, 400)
     }
 
-    const userId = authData.user.id
+    userId = authData.user.id
 
     // 2. Create profile in public.profiles
     const { data: profileData, error: profileError } = await supabase
@@ -56,15 +56,18 @@ router.post('/', async (req, res) => {
       .single()
 
     if (profileError) {
-      console.error('Profile creation error:', profileError)
-      // Cleanup: if profile fails, we might want to delete the auth user, but for now just report
-      return res.status(500).json({ error: 'Failed to create user profile' })
+      // Cleanup: if profile fails, delete the auth user
+      await supabase.auth.admin.deleteUser(userId)
+      return sendError(res, 'Failed to create user profile. Auth user rolled back.', 500)
     }
 
-    res.status(201).json(profileData)
+    return sendSuccess(res, profileData, 201)
   } catch (err) {
-    console.error('User creation endpoint error:', err)
-    res.status(500).json({ error: 'Internal server error' })
+    // Attempt cleanup if we have a userId but reached an unexpected error
+    if (userId) {
+      await supabase.auth.admin.deleteUser(userId).catch(e => console.error('Cleanup failed:', e))
+    }
+    return sendError(res, err)
   }
 })
 
@@ -87,10 +90,9 @@ router.patch('/:id', async (req, res) => {
       .single()
 
     if (error) throw error
-    res.json(data)
+    return sendSuccess(res, data)
   } catch (err) {
-    console.error('Error updating user:', err)
-    res.status(500).json({ error: 'Internal server error' })
+    return sendError(res, err)
   }
 })
 
@@ -99,7 +101,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params
 
-    // 1. Delete from profiles (CASCADE handle the rest? Or manual)
+    // 1. Delete from profiles
     const { error: profileError } = await supabase
       .from('profiles')
       .delete()
@@ -112,13 +114,11 @@ router.delete('/:id', async (req, res) => {
 
     if (authError) {
       console.error('Auth deletion error:', authError)
-      // profile is already gone, auth remains. user can't log in anyway if middleware checks profiles
     }
 
-    res.json({ success: true })
+    return sendSuccess(res, { success: true })
   } catch (err) {
-    console.error('Error deleting user:', err)
-    res.status(500).json({ error: 'Internal server error' })
+    return sendError(res, err)
   }
 })
 

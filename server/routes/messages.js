@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import supabase from '../supabaseAdmin.js'
+import { normalizePhone, sendSuccess, sendError } from '../utils.js'
 
 const router = Router()
 
@@ -7,32 +8,24 @@ const router = Router()
 router.post('/inbound', async (req, res) => {
   try {
     const { name, phone, timestamp, message, agent_slug } = req.body
+    const normalizedPhone = normalizePhone(phone)
 
-    if (!phone || !agent_slug) {
-      return res.status(400).json({ error: 'phone and agent_slug are required' })
+    if (!normalizedPhone || !agent_slug) {
+      return sendError(res, 'phone and agent_slug are required', 400)
     }
 
-    // 1. Find or create contact
-    let { data: contact } = await supabase
+    // 1. Find or create contact using upsert
+    const { data: contact, error: contactErr } = await supabase
       .from('contacts')
+      .upsert(
+        { phone: normalizedPhone, name: name || null },
+        { onConflict: 'phone' }
+      )
       .select('id')
-      .eq('phone', phone)
       .single()
 
-    if (!contact) {
-      const { data: newContact, error: contactErr } = await supabase
-        .from('contacts')
-        .insert({ name: name || null, phone })
-        .select('id')
-        .single()
-      if (contactErr) {
-        console.error('Error creating contact:', contactErr)
-        return res.status(500).json({ error: 'Failed to create contact' })
-      }
-      contact = newContact
-    } else if (name) {
-      // Update name if provided
-      await supabase.from('contacts').update({ name }).eq('id', contact.id)
+    if (contactErr || !contact) {
+      return sendError(res, 'Failed to handle contact', 500)
     }
 
     // 2. Find agent by slug
@@ -43,7 +36,7 @@ router.post('/inbound', async (req, res) => {
       .single()
 
     if (agentErr || !agent) {
-      return res.status(404).json({ error: `Agent '${agent_slug}' not found` })
+      return sendError(res, `Agent '${agent_slug}' not found`, 404)
     }
 
     // 3. Insert message
@@ -60,57 +53,48 @@ router.post('/inbound', async (req, res) => {
       })
 
     if (msgErr) {
-      console.error('Error inserting message:', msgErr)
-      return res.status(500).json({ error: 'Failed to save message' })
+      return sendError(res, 'Failed to save message', 500)
     }
 
-    res.json({ success: true })
+    return sendSuccess(res)
   } catch (err) {
-    console.error('Inbound message error:', err)
-    res.status(500).json({ error: 'Internal server error' })
+    return sendError(res, err)
   }
 })
 
 // POST /api/messages/bot-outbound — receive outbound bot message from n8n to log it into CRM
 router.post('/bot-outbound', async (req, res) => {
   try {
-    const { phone, message, agent_slug } = req.body
+    const { phone, message, agent_slug, timestamp } = req.body
+    const normalizedPhone = normalizePhone(phone)
 
-    if (!phone || !agent_slug) {
-      return res.status(400).json({ error: 'phone and agent_slug are required' })
+    if (!normalizedPhone || !agent_slug) {
+      return sendError(res, 'phone and agent_slug are required', 400)
     }
 
-    // 1. Find or create contact
-    let { data: contact } = await supabase
+    // 1. Find or create contact using upsert
+    const { data: contact, error: contactErr } = await supabase
       .from('contacts')
+      .upsert(
+        { phone: normalizedPhone },
+        { onConflict: 'phone' }
+      )
       .select('id')
-      .eq('phone', phone)
       .single()
 
-    if (!contact) {
-      console.log(`Bot outbound: Contact not found for ${phone}, creating new one.`)
-      const { data: newContact, error: contactErr } = await supabase
-        .from('contacts')
-        .insert({ name: null, phone })
-        .select('id')
-        .single()
-      
-      if (contactErr) {
-        console.error('Error creating contact for bot message:', contactErr)
-        return res.status(500).json({ error: 'Failed to create contact' })
-      }
-      contact = newContact
+    if (contactErr || !contact) {
+      return sendError(res, 'Failed to handle contact for bot message', 500)
     }
 
     // 2. Find agent by slug
-    const { data: agent } = await supabase
+    const { data: agent, error: agentErr } = await supabase
       .from('agents')
       .select('id')
       .eq('slug', agent_slug)
       .single()
 
-    if (!agent) {
-      return res.status(404).json({ error: `Agent '${agent_slug}' not found` })
+    if (agentErr || !agent) {
+      return sendError(res, `Agent '${agent_slug}' not found`, 404)
     }
 
     // 3. Insert outbound message
@@ -122,18 +106,17 @@ router.post('/bot-outbound', async (req, res) => {
         direction: 'outbound',
         content: message || '',
         media_type: 'text',
-        is_read: true, // We sent it, so it's already "read" or doesn't trigger unread badge
+        is_read: true,
+        timestamp: timestamp || new Date().toISOString(),
       })
 
     if (msgErr) {
-      console.error('Error inserting bot message:', msgErr)
-      return res.status(500).json({ error: 'Failed to save bot message' })
+      return sendError(res, 'Failed to save bot message', 500)
     }
 
-    res.json({ success: true })
+    return sendSuccess(res)
   } catch (err) {
-    console.error('Bot outbound message error:', err)
-    res.status(500).json({ error: 'Internal server error' })
+    return sendError(res, err)
   }
 })
 

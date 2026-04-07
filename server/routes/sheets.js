@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { google } from 'googleapis'
 import dotenv from 'dotenv'
+import { sendSuccess, sendError } from '../utils.js'
 
 dotenv.config()
 
@@ -36,7 +37,7 @@ router.get('/metrics', async (req, res) => {
     const sheetId = SHEET_IDS[agent]
 
     if (!sheetId) {
-      return res.status(400).json({ error: `Unknown agent: ${agent}. Available: ${Object.keys(SHEET_IDS).join(', ')}` })
+      return sendError(res, `Unknown agent: ${agent}. Available: ${Object.keys(SHEET_IDS).join(', ')}`, 400)
     }
 
     const auth = getAuth()
@@ -50,7 +51,7 @@ router.get('/metrics', async (req, res) => {
 
     const rows = response.data.values || []
     if (rows.length === 0) {
-      return res.json({
+      return sendSuccess(res, {
         headers: [],
         rows: [],
         sentCount: 0,
@@ -113,7 +114,7 @@ router.get('/metrics', async (req, res) => {
       }
     })
 
-    res.json({
+    return sendSuccess(res, {
       headers,
       rows: dataRows,
       sentCount,
@@ -121,8 +122,7 @@ router.get('/metrics', async (req, res) => {
       unanswered,
     })
   } catch (err) {
-    console.error('Sheets API error:', err.message)
-    res.status(500).json({ error: 'Failed to fetch sheet data', details: err.message })
+    return sendError(res, err)
   }
 })
 

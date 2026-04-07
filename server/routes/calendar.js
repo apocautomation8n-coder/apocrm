@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { google } from 'googleapis'
 import dotenv from 'dotenv'
+import { sendSuccess, sendError } from '../utils.js'
 
 dotenv.config()
 
@@ -18,28 +19,31 @@ const oauth2Client = new google.auth.OAuth2(
 
 // GET /api/calendar/auth-url — Generate OAuth URL for user to connect Google Calendar
 router.get('/auth-url', (req, res) => {
-  const url = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: ['https://www.googleapis.com/auth/calendar'],
-    prompt: 'consent',
-  })
-  res.json({ url })
+  try {
+    const url = oauth2Client.generateAuthUrl({
+      access_type: 'offline',
+      scope: ['https://www.googleapis.com/auth/calendar'],
+      prompt: 'consent',
+    })
+    return sendSuccess(res, { url })
+  } catch (err) {
+    return sendError(res, err)
+  }
 })
 
 // GET /api/calendar/callback — Handle OAuth callback
 router.get('/callback', async (req, res) => {
   try {
     const { code } = req.query
-    if (!code) return res.status(400).json({ error: 'No code provided' })
+    if (!code) return sendError(res, 'No code provided', 400)
 
     const { tokens } = await oauth2Client.getToken(code)
     oauth2Client.setCredentials(tokens)
 
     // In production, save tokens to Supabase associated with the user
-    res.json({ success: true, message: 'Google Calendar connected', tokens })
+    return sendSuccess(res, { message: 'Google Calendar connected', tokens })
   } catch (err) {
-    console.error('OAuth callback error:', err)
-    res.status(500).json({ error: 'OAuth failed' })
+    return sendError(res, err)
   }
 })
 
@@ -50,7 +54,7 @@ router.post('/event', async (req, res) => {
 
     // Check if we have valid credentials
     if (!oauth2Client.credentials?.access_token) {
-      return res.status(401).json({ error: 'Google Calendar not connected. Visit /api/calendar/auth-url first.' })
+      return sendError(res, 'Google Calendar not connected. Visit /api/calendar/auth-url first.', 401)
     }
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
@@ -77,10 +81,9 @@ router.post('/event', async (req, res) => {
       resource: event,
     })
 
-    res.json({ success: true, event: result.data })
+    return sendSuccess(res, result.data)
   } catch (err) {
-    console.error('Calendar event error:', err)
-    res.status(500).json({ error: 'Failed to create event' })
+    return sendError(res, err)
   }
 })
 

@@ -1,68 +1,68 @@
 import { Router } from 'express'
 import supabase from '../supabaseAdmin.js'
+import { normalizePhone, sendSuccess, sendError } from '../utils.js'
 
 const router = Router()
 
 // GET /api/agents/status?phone=5491112345678
 // Returns whether the bot is enabled for the agent that last interacted with this phone number
+// GET /api/agents/status?phone=5491112345678
+// Returns whether the bot is enabled for the agent that last interacted with this phone number
 router.get('/status', async (req, res) => {
   try {
     const { phone } = req.query
+    const normalizedPhone = normalizePhone(phone)
 
-    if (!phone) {
-      return res.status(400).json({ error: 'phone query param is required' })
+    if (!normalizedPhone) {
+      return sendError(res, 'phone query param is required', 400)
     }
 
     // Find contact by phone
-    const { data: contact } = await supabase
+    const { data: contact, error: contactErr } = await supabase
       .from('contacts')
-      .select('id')
-      .eq('phone', phone)
+      .select('id, bot_enabled')
+      .eq('phone', normalizedPhone)
       .single()
 
-    if (!contact) {
-      return res.status(404).json({ error: 'Contact not found' })
+    if (contactErr || !contact) {
+      return sendError(res, 'Contact not found for the given phone number', 404)
     }
 
     // Find last message for this contact to get the agent_id
-    const { data: lastMsg } = await supabase
+    const { data: lastMsg, error: lastMsgErr } = await supabase
       .from('messages')
       .select('agent_id')
       .eq('contact_id', contact.id)
       .order('timestamp', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
+
+    if (lastMsgErr) {
+      return sendError(res, 'Error fetching last message', 500)
+    }
 
     if (!lastMsg) {
-      return res.status(404).json({ error: 'No messages found for this contact' })
+      return sendError(res, 'No previous interaction found for this contact. Cannot determine agent.', 404)
     }
 
     // Get agent info
-    const { data: agent } = await supabase
+    const { data: agent, error: agentErr } = await supabase
       .from('agents')
       .select('slug')
       .eq('id', lastMsg.agent_id)
       .single()
 
-    if (!agent) {
-      return res.status(404).json({ error: 'Agent not found' })
+    if (agentErr || !agent) {
+      return sendError(res, 'Assigned agent not found in database', 404)
     }
 
-    // Get contact bot status
-    const { data: contactStatus } = await supabase
-      .from('contacts')
-      .select('bot_enabled')
-      .eq('id', contact.id)
-      .single()
-
-    res.json({
-      phone,
+    return sendSuccess(res, {
+      phone: normalizedPhone,
       agent_slug: agent.slug,
-      bot_enabled: contactStatus?.bot_enabled ?? true,
+      bot_enabled: contact.bot_enabled ?? true,
     })
   } catch (err) {
-    console.error('Agent status error:', err)
-    res.status(500).json({ error: 'Internal server error' })
+    return sendError(res, err)
   }
 })
 
