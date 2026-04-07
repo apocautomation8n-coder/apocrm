@@ -19,7 +19,7 @@ import { supabase } from '../lib/supabaseClient'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, Trash2, Pencil, Globe, Video, ExternalLink, ArrowRightLeft } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, Trash2, Pencil, Globe, Video, ExternalLink, ArrowRightLeft, User, Check, Search } from 'lucide-react'
 import Select from '../components/ui/Select'
 import toast from 'react-hot-toast'
 
@@ -33,22 +33,25 @@ export default function Calendar() {
   const [guestInput, setGuestInput] = useState('')
   const [isGeneratingMeet, setIsGeneratingMeet] = useState(false)
   
+  // Contacts integration
+  const [contacts, setContacts] = useState([])
+  const [contactSearch, setContactSearch] = useState('')
+  const [showContactPicker, setShowContactPicker] = useState(false)
+  
   // Timezone helper state
   const [tzForm, setTzForm] = useState({ country: 'AR', time: '' })
 
   const timezones = [
-    { code: 'AR', name: 'Argentina (Base)', offset: 0 },
+    { code: 'AR', name: 'Argentina/Uruguay/Chile', offset: 0 },
+    { code: 'BO', name: 'Bolivia/Paraguay/Venezuela', offset: 1 },
+    { code: 'CO', name: 'Colombia/Perú/Ecuador/Panamá', offset: 2 },
+    { code: 'MX', name: 'México/Costa Rica/Guatemala', offset: 3 },
     { code: 'ES', name: 'España (Madrid)', offset: -5 },
-    { code: 'MX', name: 'México (CDMX)', offset: 3 },
     { code: 'US', name: 'USA (Miami/NY)', offset: 1 },
-    { code: 'CO', name: 'Col/Perú/Ecu', offset: 2 },
-    { code: 'CL', name: 'Chile', offset: 0 },
   ]
 
   // Use local Supabase table for events (can be enhanced with Google Calendar later)
   const fetchEvents = async () => {
-    // We'll store calendar events in a simple table. Let's create it if not exists
-    // For now use local state with supabase custom table
     const { data, error } = await supabase
       .from('calendar_events')
       .select('*')
@@ -56,7 +59,19 @@ export default function Calendar() {
     if (!error && data) setEvents(data)
   }
 
-  useEffect(() => { fetchEvents() }, [])
+  const fetchContacts = async () => {
+    const { data, error } = await supabase
+      .from('contacts')
+      .select('id, name, phone, email')
+      .not('email', 'is', null) // Only contacts with email are useful here
+      .order('name')
+    if (!error && data) setContacts(data)
+  }
+
+  useEffect(() => { 
+    fetchEvents() 
+    fetchContacts()
+  }, [])
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
@@ -395,7 +410,60 @@ export default function Calendar() {
             <Input label="Hora fin (ARG)" type="time" value={form.end_time} onChange={(e) => setForm(f => ({ ...f, end_time: e.target.value }))} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-surface-300">Invitados (Enter para agregar)</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-surface-300 font-bold uppercase tracking-wider">Invitados</label>
+              <button 
+                type="button" 
+                onClick={() => setShowContactPicker(!showContactPicker)}
+                className="text-xs text-primary-400 hover:text-primary-300 font-medium flex items-center gap-1 transition-colors"
+                title="Seleccionar de contactos guardados"
+              >
+                <User size={12} /> {showContactPicker ? 'Ocultar lista' : 'Seleccionar contacto'}
+              </button>
+            </div>
+
+            {showContactPicker && (
+              <div className="p-3 rounded-xl bg-surface-950/40 border border-surface-800/60 space-y-3 animate-slide-down">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500" />
+                  <input
+                    placeholder="Buscar contacto..."
+                    value={contactSearch}
+                    onChange={(e) => setContactSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-surface-800/50 border border-surface-700/30 text-xs text-surface-200 outline-none focus:ring-1 focus:ring-primary-500/50"
+                  />
+                </div>
+                <div className="max-h-[120px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                  {contacts
+                    .filter(c => !contactSearch || c.name?.toLowerCase().includes(contactSearch.toLowerCase()) || c.email?.toLowerCase().includes(contactSearch.toLowerCase()))
+                    .map(c => {
+                      const isAlreadyGuest = form.guests.includes(c.email)
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() => {
+                            if (!isAlreadyGuest) {
+                              setForm(f => ({ ...f, guests: [...f.guests, c.email] }))
+                              toast.success(`${c.name || 'Contacto'} agregado`)
+                            }
+                          }}
+                          className={`
+                            w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors
+                            ${isAlreadyGuest ? 'opacity-40 cursor-default' : 'hover:bg-surface-800/80 cursor-pointer'}
+                          `}
+                        >
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-medium text-surface-200 truncate">{c.name || 'Sin nombre'}</p>
+                            <p className="text-[10px] text-surface-500 truncate">{c.email}</p>
+                          </div>
+                          {isAlreadyGuest && <Check size={12} className="text-emerald-400" />}
+                        </button>
+                      )
+                    })}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2 p-2 min-h-[42px] rounded-xl bg-surface-800/80 border border-surface-700/50">
               {form.guests.map(email => (
                 <div key={email} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-primary-500/20 border border-primary-500/30 text-primary-300 text-xs">
