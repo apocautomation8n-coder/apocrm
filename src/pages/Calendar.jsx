@@ -107,6 +107,12 @@ export default function Calendar() {
       const { error } = await supabase.from('calendar_events').update(payload).eq('id', editing.id)
       if (error) return toast.error('Error actualizando evento')
       toast.success('Evento actualizado')
+      setShowEventModal(false)
+      setEditing(null)
+      setForm({ title: '', date: '', start_time: '', end_time: '', description: '', guests: [], meet_link: '' })
+      setGuestInput('')
+      setTzForm({ country: 'AR', time: '' })
+      fetchEvents()
     } else {
       const { data, error } = await supabase
         .from('calendar_events')
@@ -124,8 +130,15 @@ export default function Calendar() {
       }
 
       const createdId = data.id
+      // Immediately add event to state and close modal before webhook
+      setEvents(prev => [...prev, { ...data }])
+      setShowEventModal(false)
+      setEditing(null)
+      setForm({ title: '', date: '', start_time: '', end_time: '', description: '', guests: [], meet_link: '' })
+      setGuestInput('')
+      setTzForm({ country: 'AR', time: '' })
 
-      // Send webhook to n8n to generate Meet link and email
+      // Send webhook to n8n to generate Meet link and email (async, non-blocking)
       setIsGeneratingMeet(true)
       try {
         const response = await fetch('https://automation8n.fluxia.site/webhook/e64e181f-b3f4-4e02-b6c3-6c5f126a39ab', {
@@ -137,30 +150,30 @@ export default function Calendar() {
         if (response.ok) {
           const text = await response.text()
           if (text) {
-            const resData = JSON.parse(text)
-            const link = resData.meet_link || resData.link || resData.url
+            let resData
+            try { resData = JSON.parse(text) } catch { resData = {} }
+            const link = resData.meet_link || resData.meetLink || resData.link || resData.url || resData.hangoutLink
             if (link) {
               await supabase.from('calendar_events').update({ meet_link: link }).eq('id', createdId)
               setEvents(prev => prev.map(e => e.id === createdId ? { ...e, meet_link: link } : e))
-              toast.success('Link de Meet generado e integrado')
+              toast.success('✅ Link de Google Meet generado')
+            } else {
+              toast.success('Reunión agendada')
             }
           } else {
             toast.success('Reunión agendada')
           }
+        } else {
+          toast.error('Error al contactar n8n')
         }
       } catch (err) {
-         console.error('Error n8n webhook', err)
+        console.error('Error n8n webhook', err)
+        toast.error('No se pudo generar el link de Meet')
       } finally {
         setIsGeneratingMeet(false)
+        fetchEvents()
       }
     }
-
-    setShowEventModal(false)
-    setEditing(null)
-    setForm({ title: '', date: '', start_time: '', end_time: '', description: '', guests: [], meet_link: '' })
-    setGuestInput('')
-    setTzForm({ country: 'AR', time: '' })
-    fetchEvents()
   }
 
   const handleDelete = async (id) => {
@@ -321,6 +334,127 @@ export default function Calendar() {
         </div>
       </div>
 
+      {/* Upcoming Meetings with Meet Links */}
+      {(() => {
+        const todayStr = format(new Date(), 'yyyy-MM-dd')
+        const upcoming = events
+          .filter(e => e.date >= todayStr)
+          .sort((a, b) => {
+            if (a.date !== b.date) return a.date.localeCompare(b.date)
+            return (a.start_time || '').localeCompare(b.start_time || '')
+          })
+        return (
+          <div className="bg-surface-900/80 border border-surface-800/60 rounded-2xl overflow-hidden animate-fade-in">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800/60">
+              <div className="flex items-center gap-2">
+                <Video size={16} className="text-emerald-400" />
+                <h3 className="text-sm font-semibold text-surface-200">Próximas Reuniones</h3>
+                {isGeneratingMeet && (
+                  <div className="flex items-center gap-1.5 ml-2 px-2 py-0.5 rounded-full bg-primary-500/10 border border-primary-500/20">
+                    <div className="w-3 h-3 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-[10px] text-primary-300 font-medium">Generando Meet...</span>
+                  </div>
+                )}
+              </div>
+              <span className="text-xs text-surface-500">{upcoming.length} reunión{upcoming.length !== 1 ? 'es' : ''}</span>
+            </div>
+            {upcoming.length === 0 ? (
+              <div className="px-5 py-8 text-center">
+                <CalendarDays size={32} className="text-surface-700 mx-auto mb-3" />
+                <p className="text-sm text-surface-500">No hay reuniones próximas</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-surface-800/40">
+                {upcoming.slice(0, 8).map(evt => {
+                  const evtDate = new Date(evt.date + 'T12:00:00')
+                  const isEvtToday = evt.date === todayStr
+                  return (
+                    <div key={evt.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-surface-800/30 transition-colors group">
+                      {/* Date badge */}
+                      <div className={`flex-shrink-0 w-12 text-center rounded-xl p-1.5 ${
+                        isEvtToday 
+                          ? 'bg-primary-600/20 border border-primary-500/30' 
+                          : 'bg-surface-800/60 border border-surface-700/30'
+                      }`}>
+                        <p className={`text-[10px] font-medium uppercase ${
+                          isEvtToday ? 'text-primary-400' : 'text-surface-500'
+                        }`}>
+                          {format(evtDate, 'MMM', { locale: es })}
+                        </p>
+                        <p className={`text-lg font-bold leading-none ${
+                          isEvtToday ? 'text-primary-300' : 'text-surface-300'
+                        }`}>
+                          {format(evtDate, 'd')}
+                        </p>
+                      </div>
+
+                      {/* Event info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold text-surface-100 truncate">{evt.title}</p>
+                          {isEvtToday && (
+                            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-500/20 text-primary-300 border border-primary-500/30">HOY</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-0.5 text-xs text-surface-400">
+                          {evt.start_time && (
+                            <span className="flex items-center gap-1">
+                              <Clock size={10} />
+                              {evt.start_time}{evt.end_time ? ` — ${evt.end_time}` : ''} (ARG)
+                            </span>
+                          )}
+                          {evt.guests && (
+                            <span className="flex items-center gap-1 truncate max-w-[180px]">
+                              <User size={10} />
+                              {evt.guests.split(',')[0].trim()}{evt.guests.split(',').length > 1 ? ` +${evt.guests.split(',').length - 1}` : ''}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Meet link button */}
+                      <div className="flex-shrink-0 flex items-center gap-2">
+                        {evt.meet_link ? (
+                          <a
+                            href={evt.meet_link}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/25 hover:text-emerald-200 transition-all"
+                          >
+                            <Video size={13} />
+                            Unirse a Meet
+                            <ExternalLink size={11} />
+                          </a>
+                        ) : (
+                          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-800/50 text-surface-500 text-xs">
+                            <Video size={13} />
+                            Sin link
+                          </span>
+                        )}
+                        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                          <button onClick={() => openEditEvent(evt)} className="p-1.5 rounded-lg text-surface-600 hover:text-amber-400 hover:bg-amber-500/10 transition-all cursor-pointer">
+                            <Pencil size={13} />
+                          </button>
+                          <button onClick={() => handleDelete(evt.id)} className="p-1.5 rounded-lg text-surface-600 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer">
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+                {upcoming.length > 8 && (
+                  <div className="px-5 py-3 text-center">
+                    <p className="text-xs text-surface-500">+{upcoming.length - 8} reuniones más en el calendario</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
       {/* Selected day events */}
       {selectedDate && (
         <div className="bg-surface-900/80 border border-surface-800/60 rounded-2xl p-5 animate-fade-in">
@@ -352,7 +486,7 @@ export default function Calendar() {
                           href={evt.meet_link} 
                           target="_blank" 
                           rel="noreferrer" 
-                          className="flex items-center gap-1 text-primary-400 hover:underline"
+                          className="flex items-center gap-2 px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold hover:bg-emerald-500/25 transition-all"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Video size={11} /> Unirse a Meet
