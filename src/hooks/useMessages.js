@@ -222,16 +222,25 @@ export async function sendOutboundMessage({ phone, agentSlug, agentId, contactId
 }
 
 export async function deleteConversationByContact(agentId, contactId) {
-  const { error } = await supabase
+  // 1. Borrar todos los mensajes de este agente/contacto
+  const { error: msgError } = await supabase
     .from('messages')
     .delete()
     .eq('agent_id', agentId)
     .eq('contact_id', contactId)
 
-  if (error) {
+  if (msgError) {
     toast.error('Error al borrar la conversación')
-    throw error
+    throw msgError
   }
+
+  // 2. Borrar todos los seguimientos de este agente/contacto
+  // Así no reaparece en métricas ni el bot le vuelve a escribir
+  await supabase
+    .from('follow_ups')
+    .delete()
+    .eq('agent_id', agentId)
+    .eq('contact_id', contactId)
 
   toast.success('Conversación borrada')
 }
