@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { StatCard } from '../components/ui/Card'
 import Tabs from '../components/ui/Tabs'
 import Button from '../components/ui/Button'
-import { Send, UserCheck, MessageSquareX, RefreshCw, BarChart3, Edit2, Save, X } from 'lucide-react'
+import { Send, UserCheck, MessageSquareX, RefreshCw, BarChart3, Edit2, Save, X, History, CheckCircle2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 // Dynamic agents will be fetched from the database
@@ -20,6 +20,11 @@ export default function Metrics() {
     sent: 0,
     replied: 0,
     unanswered: 0
+  })
+
+  const [followUpMetrics, setFollowUpMetrics] = useState({
+    sent: 0,
+    responded: 0
   })
 
   const [editForm, setEditForm] = useState({
@@ -88,6 +93,25 @@ export default function Metrics() {
     }
   }
 
+  // 2b. Fetch Follow-Up Metrics from follow_ups table
+  const fetchFollowUpMetrics = async (agentSlug) => {
+    if (!agentSlug) return
+    const agent = agents.find(a => a.slug === agentSlug)
+    if (!agent) return
+
+    const { data } = await supabase
+      .from('follow_ups')
+      .select('status')
+      .eq('agent_id', agent.id)
+      .in('status', ['followed_up', 'responded'])
+
+    if (data) {
+      const sent = data.filter(r => r.status === 'followed_up').length
+      const responded = data.filter(r => r.status === 'responded').length
+      setFollowUpMetrics({ sent, responded })
+    }
+  }
+
   // 3. Fetch overrides from Supabase
   const fetchDbMetrics = async () => {
     if (!activeAgent) return
@@ -116,6 +140,7 @@ export default function Metrics() {
     if (activeAgent) {
       fetchDbMetrics()
       fetchCrmMetrics(activeAgent)
+      fetchFollowUpMetrics(activeAgent)
       setIsEditing(false)
     }
   }, [activeAgent, agents])
@@ -164,7 +189,7 @@ export default function Metrics() {
             </>
           ) : (
             <>
-              <Button variant="secondary" size="sm" onClick={() => fetchCrmMetrics(activeAgent)} loading={loading}>
+              <Button variant="secondary" size="sm" onClick={() => { fetchCrmMetrics(activeAgent); fetchFollowUpMetrics(activeAgent) }} loading={loading}>
                 <RefreshCw size={14} />
                 Refrescar
               </Button>
@@ -252,12 +277,38 @@ export default function Metrics() {
         </div>
       )}
 
-      {/* Data table placeholder - User wants to focus on cards now */}
-      <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 opacity-50">
-        <BarChart3 size={48} className="text-surface-600" />
-        <div>
-          <h3 className="text-surface-300 font-medium">Métricas configuradas vía CRM</h3>
-          <p className="text-xs text-surface-500">Los datos se extraen en tiempo real de las conversaciones activas</p>
+      {/* Follow-Up Metrics Section */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <History size={16} className="text-primary-400" />
+          <h2 className="text-sm font-semibold text-surface-300 uppercase tracking-wider">Seguimientos Automáticos</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 rounded-2xl border bg-surface-900/60 border-surface-800/60">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-surface-400">Seguimientos Enviados</span>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-violet-500/10">
+                <History size={16} className="text-violet-400" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-surface-100">{followUpMetrics.sent}</div>
+            <p className="text-[11px] text-surface-500 mt-1">Prospectos que recibieron el recordatorio automático</p>
+          </div>
+
+          <div className="p-4 rounded-2xl border bg-surface-900/60 border-surface-800/60">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-surface-400">Respondieron tras Seguimiento</span>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-500/10">
+                <CheckCircle2 size={16} className="text-teal-400" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-surface-100">{followUpMetrics.responded}</div>
+            <p className="text-[11px] text-surface-500 mt-1">
+              {followUpMetrics.sent > 0
+                ? `${Math.round((followUpMetrics.responded / followUpMetrics.sent) * 100)}% de conversión sobre seguimientos`
+                : 'Sin seguimientos enviados aún'}
+            </p>
+          </div>
         </div>
       </div>
     </div>
