@@ -48,13 +48,6 @@ export default function Metrics() {
       const agent = agents.find(a => a.slug === agentSlug)
       if (!agent) return
 
-      // Total Sent
-      const { count: sentCount } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('agent_id', agent.id)
-        .eq('direction', 'outbound')
-
       // Responded (contacts with inbound messages)
       const { data: repliedData } = await supabase
         .from('messages')
@@ -82,7 +75,7 @@ export default function Metrics() {
       })
 
       setCrmMetrics({
-        sent: sentCount || 0,
+        sent: messagedSet.size || 0,
         replied: repliedCount || 0,
         unanswered: unansweredCount || 0
       })
