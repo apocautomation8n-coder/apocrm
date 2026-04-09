@@ -1,10 +1,33 @@
 import { useEffect, useRef } from 'react'
+import { format, isToday, isYesterday, isSameDay } from 'date-fns'
+import { es } from 'date-fns/locale'
 import MessageBubble from './MessageBubble'
 import MessageInput from './MessageInput'
 import { useMessages } from '../../hooks/useMessages'
 import { useRealtime } from '../../hooks/useRealtime'
 import { MessageSquare, Bot } from 'lucide-react'
 import Toggle from '../ui/Toggle'
+
+function DateSeparator({ date }) {
+  let label
+  if (isToday(date)) {
+    label = 'Hoy'
+  } else if (isYesterday(date)) {
+    label = 'Ayer'
+  } else {
+    label = format(date, "d 'de' MMMM, yyyy", { locale: es })
+  }
+
+  return (
+    <div className="flex items-center gap-3 my-4">
+      <div className="flex-1 h-px bg-surface-800/60" />
+      <span className="text-[11px] font-medium text-surface-500 bg-surface-900/80 px-3 py-1 rounded-full border border-surface-800/60 uppercase tracking-wider">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-surface-800/60" />
+    </div>
+  )
+}
 
 export default function ChatWindow({ agent, contact, onToggleBot }) {
   const { messages, loading, addMessage } = useMessages(agent?.id, contact?.id)
@@ -35,6 +58,23 @@ export default function ChatWindow({ agent, contact, onToggleBot }) {
     )
   }
 
+  // Build list with date separators injected between day changes
+  const renderMessages = () => {
+    const items = []
+    let lastDate = null
+
+    messages.forEach((msg) => {
+      const msgDate = new Date(msg.timestamp)
+      if (!lastDate || !isSameDay(lastDate, msgDate)) {
+        items.push(<DateSeparator key={`sep-${msg.timestamp}`} date={msgDate} />)
+        lastDate = msgDate
+      }
+      items.push(<MessageBubble key={msg.id} message={msg} />)
+    })
+
+    return items
+  }
+
   return (
     <div className="flex-1 flex flex-col min-w-0">
       {/* Chat header */}
@@ -63,7 +103,7 @@ export default function ChatWindow({ agent, contact, onToggleBot }) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-surface-950/30">
+      <div className="flex-1 overflow-y-auto px-5 py-4 bg-surface-950/30">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="w-6 h-6 rounded-full border-2 border-primary-500 border-t-transparent animate-spin" />
@@ -73,9 +113,9 @@ export default function ChatWindow({ agent, contact, onToggleBot }) {
             <p className="text-surface-600 text-sm">No hay mensajes aún</p>
           </div>
         ) : (
-          messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
-          ))
+          <div className="space-y-3">
+            {renderMessages()}
+          </div>
         )}
         <div ref={bottomRef} />
       </div>
