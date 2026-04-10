@@ -5,7 +5,7 @@ import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
-import { TrendingDown, Plus, Pencil, Trash2, Filter, Repeat } from 'lucide-react'
+import { TrendingDown, Plus, Pencil, Trash2, Filter, Repeat, Power } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 
@@ -65,7 +65,7 @@ export default function FinanceExpenses({ hideHeader = false }) {
 
   const totalsByCurrency = useMemo(() => {
     return currencies.map(c => {
-      const perCurr = filtered.filter(e => (e.currency || 'USD') === c.code)
+      const perCurr = filtered.filter(e => (e.currency || 'USD') === c.code && (e.status || 'activo') === 'activo')
       return {
         code: c.code,
         label: c.label,
@@ -108,6 +108,16 @@ export default function FinanceExpenses({ hideHeader = false }) {
     await supabase.from('expenses').delete().eq('id', id)
     toast.success('Egreso eliminado')
     fetchExpenses()
+  }
+
+  const handleToggleStatus = async (id, currentStatus) => {
+    const newStatus = currentStatus === 'activo' ? 'desactivado' : 'activo'
+    const { error } = await supabase.from('expenses').update({ status: newStatus }).eq('id', id)
+    if (error) toast.error('Error cambiando estado')
+    else {
+      setExpenses(prev => prev.map(e => e.id === id ? { ...e, status: newStatus } : e))
+      toast.success(newStatus === 'activo' ? 'Egreso activado' : 'Egreso desactivado')
+    }
   }
 
   const openNewModal = () => {
@@ -239,7 +249,7 @@ export default function FinanceExpenses({ hideHeader = false }) {
               </thead>
               <tbody>
                 {filtered.map(e => (
-                  <tr key={e.id} className="border-b border-surface-800/30 hover:bg-surface-800/30 transition-colors">
+                  <tr key={e.id} className={`border-b border-surface-800/30 hover:bg-surface-800/30 transition-colors ${(e.status || 'activo') !== 'activo' ? 'opacity-40' : ''}`}>
                     <td className="px-5 py-3.5 text-surface-400">{e.date}</td>
                     <td className="px-5 py-3.5 text-surface-200 font-medium">{e.description}</td>
                     <td className="px-5 py-3.5 text-surface-400">{e.category || '—'}</td>
@@ -260,6 +270,17 @@ export default function FinanceExpenses({ hideHeader = false }) {
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center justify-end gap-1">
+                        <button 
+                          title={(e.status || 'activo') === 'activo' ? 'Desactivar egreso' : 'Activar egreso'}
+                          onClick={() => handleToggleStatus(e.id, e.status || 'activo')} 
+                          className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                            (e.status || 'activo') === 'activo' 
+                              ? 'text-surface-500 hover:text-emerald-400 hover:bg-emerald-500/10' 
+                              : 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20'
+                          }`}
+                        >
+                          <Power size={15} />
+                        </button>
                         <button title="Editar" onClick={() => openEditModal(e)} className="p-1.5 rounded-lg text-surface-500 hover:text-amber-400 hover:bg-amber-500/10 cursor-pointer">
                           <Pencil size={15} />
                         </button>
