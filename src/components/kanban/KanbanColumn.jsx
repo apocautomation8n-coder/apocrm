@@ -140,22 +140,37 @@ export default function KanbanColumn({
                 >
                   <Pencil size={14} /> Editar nombre
                 </button>
-                <button
-                  onClick={() => {
-                    const color = prompt('Color HEX (ej: #10b981):', stage.color)
-                    if (color) onUpdateStage(stage.id, { color })
-                    setShowMenu(false)
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-surface-300 hover:bg-surface-700 transition-colors cursor-pointer"
-                >
-                  🎨 Cambiar color
-                </button>
-                <button
-                  onClick={() => { onDeleteStage(stage.id); setShowMenu(false) }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-                >
-                  <Trash2 size={14} /> Eliminar etapa
-                </button>
+                
+                <div className="px-3 py-2 border-t border-surface-700/50 mt-1">
+                  <p className="text-[10px] text-surface-500 uppercase font-bold mb-2 tracking-wider">Cambiar color</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      '#6366f1', '#10b981', '#3b82f6', '#8b5cf6',
+                      '#f59e0b', '#ef4444', '#ec4899', '#94a3b8'
+                    ].map(c => (
+                      <button
+                        key={c}
+                        onClick={() => {
+                          onUpdateStage(stage.id, { color: c })
+                          setShowMenu(false)
+                        }}
+                        className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 cursor-pointer ${
+                          stage.color === c ? 'border-white' : 'border-transparent'
+                        }`}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-surface-700/50 mt-1">
+                  <button
+                    onClick={() => { onDeleteStage(stage.id); setShowMenu(false) }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={14} /> Eliminar etapa
+                  </button>
+                </div>
               </div>
             )}
           </div>
