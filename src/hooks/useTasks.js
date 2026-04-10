@@ -8,19 +8,31 @@ export function useTasks(memberId = 'all') {
 
   const fetchTasks = useCallback(async () => {
     setLoading(true)
-    let query = supabase.from('tasks').select('*, assigned_to(id, name, avatar_color)')
     
-    if (memberId && memberId !== 'all') {
-      query = query.eq('assigned_to', memberId)
-    }
-
+    // Fetch tasks with their assignees via join table
+    let query = supabase
+      .from('tasks')
+      .select('*, assignees:task_assignees(member:team_members(id, name, avatar_color))')
+    
     const { data, error } = await query.order('position', { ascending: true })
     
     if (error) {
       console.error('Error fetching tasks:', error)
       toast.error('Error cargando tareas')
     } else {
-      setTasks(data || [])
+      // Flatten the join structure and filter by member if needed
+      let formattedTasks = (data || []).map(task => ({
+        ...task,
+        assigned_members: task.assignees?.map(a => a.member).filter(Boolean) || []
+      }))
+
+      if (memberId && memberId !== 'all') {
+        formattedTasks = formattedTasks.filter(t => 
+          t.assigned_members.some(m => m.id === memberId)
+        )
+      }
+      
+      setTasks(formattedTasks)
     }
     setLoading(false)
   }, [memberId])
@@ -28,45 +40,56 @@ export function useTasks(memberId = 'all') {
   useEffect(() => {
     fetchTasks()
     
-    const channel = supabase
-      .channel('tasks-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
-        fetchTasks()
-      })
+    // Realtime subscription for tasks AND their assignments
+    const taskChannel = supabase
+      .channel('tasks-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => fetchTasks())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_assignees' }, () => fetchTasks())
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => { supabase.removeChannel(taskChannel) }
   }, [fetchTasks])
 
   const addTask = async (taskData) => {
-    const { data, error } = await supabase
+    const { assigned_to_ids, ...rest } = taskData
+    
+    const { data: task, error: taskError } = await supabase
       .from('tasks')
-      .insert(taskData)
-      .select('*, assigned_to(id, name, avatar_color)')
+      .insert(rest)
+      .select()
       .single()
     
-    if (error) {
+    if (taskError) {
       toast.error('Error creando tarea')
-      return { error }
+      return { error: taskError }
     }
 
-    // Trigger notification if assigned
-    if (taskData.assigned_to) {
-      await supabase.from('notifications').insert({
-        member_id: taskData.assigned_to,
-        task_id: data.id,
-        type: 'asignada',
-        message: `Te asignaron la tarea "${data.title}"`
-      })
+    // Add multiple assignees
+    if (assigned_to_ids && assigned_to_ids.length > 0) {
+      const assignments = assigned_to_ids.map(mid => ({ task_id: task.id, member_id: mid }))
+      await supabase.from('task_assignees').insert(assignments)
+      
+      // Notify all
+      for (const mid of assigned_to_ids) {
+        await supabase.from('notifications').insert({
+          member_id: mid,
+          task_id: task.id,
+          type: 'asignada',
+          message: `Te asignaron la tarea "${task.title}"`
+        })
+      }
     }
 
-    return { data }
+    return { data: task }
   }
 
   const updateTask = async (taskId, updates) => {
-    const { data, error } = await supabase
+    const { assigned_to_ids, ...rest } = updates
+    
+    // 1. Update task basic info
+    const { data: task, error } = await supabase
       .from('tasks')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update({ ...rest, updated_at: new Date().toISOString() })
       .eq('id', taskId)
       .select()
       .single()
@@ -75,7 +98,19 @@ export function useTasks(memberId = 'all') {
       toast.error('Error actualizando tarea')
       return { error }
     }
-    return { data }
+
+    // 2. Sync assignees if provided
+    if (assigned_to_ids !== undefined) {
+      // Simplest way: delete all and re-insert
+      await supabase.from('task_assignees').delete().eq('task_id', taskId)
+      
+      if (assigned_to_ids.length > 0) {
+        const assignments = assigned_to_ids.map(mid => ({ task_id: taskId, member_id: mid }))
+        await supabase.from('task_assignees').insert(assignments)
+      }
+    }
+
+    return { data: task }
   }
 
   const deleteTask = async (taskId) => {
@@ -119,7 +154,24 @@ export function useTeamMembers() {
     return { data, error }
   }
 
-  return { members, loading, addMember }
+  const updateMember = async (id, updates) => {
+    const { data, error } = await supabase
+      .from('team_members')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+    if (!error) setMembers(prev => prev.map(m => m.id === id ? data : m))
+    return { data, error }
+  }
+
+  const deleteMember = async (id) => {
+    const { error } = await supabase.from('team_members').delete().eq('id', id)
+    if (!error) setMembers(prev => prev.filter(m => m.id !== id))
+    return { error }
+  }
+
+  return { members, loading, refetch: fetchMembers, addMember, updateMember, deleteMember }
 }
 
 export function useNotifications(memberId) {

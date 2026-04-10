@@ -22,7 +22,7 @@ const STATUSES = [
 export default function TaskModal({ isOpen, onClose, onSave, task = null }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [assignedTo, setAssignedTo] = useState('')
+  const [assignedToIds, setAssignedToIds] = useState([])
   const [priority, setPriority] = useState('normal')
   const [status, setStatus] = useState('todo')
   const [dueDate, setDueDate] = useState('')
@@ -36,7 +36,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task = null }) {
     if (task) {
       setTitle(task.title || '')
       setDescription(task.description || '')
-      setAssignedTo(task.assigned_to?.id || '')
+      setAssignedToIds(task.assigned_members?.map(m => m.id) || [])
       setPriority(task.priority || 'normal')
       setStatus(task.status || 'todo')
       setDueDate(task.due_date || '')
@@ -45,7 +45,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task = null }) {
     } else {
       setTitle('')
       setDescription('')
-      setAssignedTo('')
+      setAssignedToIds([])
       setPriority('normal')
       setStatus('todo')
       setDueDate('')
@@ -53,6 +53,14 @@ export default function TaskModal({ isOpen, onClose, onSave, task = null }) {
       setTags([])
     }
   }, [task, isOpen])
+
+  const toggleMember = (memberId) => {
+    setAssignedToIds(prev => 
+      prev.includes(memberId) 
+        ? prev.filter(id => id !== memberId) 
+        : [...prev, memberId]
+    )
+  }
 
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -72,7 +80,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task = null }) {
     onSave({
       title: title.trim(),
       description: description.trim(),
-      assigned_to: assignedTo || null,
+      assigned_to_ids: assignedToIds,
       priority,
       status,
       due_date: dueDate || null,
@@ -103,29 +111,61 @@ export default function TaskModal({ isOpen, onClose, onSave, task = null }) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-surface-300 mb-1.5">Asignado a</label>
-            <select
-              value={assignedTo}
-              onChange={(e) => setAssignedTo(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-surface-800/60 border border-surface-700/30 text-surface-200 focus:outline-none focus:ring-1 focus:ring-primary-500/40 transition-all"
-            >
-              <option value="">Sin asignar</option>
-              {members.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-surface-300">Asignado a</label>
+          <div className="flex flex-wrap gap-2">
+            {members.map(m => {
+              const isSelected = assignedToIds.includes(m.id)
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => toggleMember(m.id)}
+                  className={`
+                    flex items-center gap-2 px-3 py-2 rounded-xl border transition-all
+                    ${isSelected 
+                      ? 'bg-primary-600/20 border-primary-500/50 text-white' 
+                      : 'bg-surface-800/40 border-surface-700/30 text-surface-400 hover:border-surface-600'}
+                  `}
+                >
+                  <div 
+                    className="w-5 h-5 rounded-lg flex items-center justify-center text-[8px] font-bold"
+                    style={{ backgroundColor: m.avatar_color }}
+                  >
+                    {m.name[0].toUpperCase()}
+                  </div>
+                  <span className="text-xs font-medium">{m.name}</span>
+                </button>
+              )
+            })}
+            {members.length === 0 && (
+              <p className="text-xs text-surface-600 italic">No hay miembros en el equipo</p>
+            )}
           </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-surface-300 mb-1.5">Prioridad</label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-surface-800/60 border border-surface-700/30 text-surface-200 focus:outline-none focus:ring-1 focus:ring-primary-500/40 transition-all"
+              className="w-full px-4 py-2.5 rounded-xl bg-surface-800/60 border border-surface-700/30 text-surface-200 focus:outline-none focus:ring-1 focus:ring-primary-500/40 transition-all font-medium"
             >
               {PRIORITIES.map(p => (
                 <option key={p.id} value={p.id}>{p.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-surface-300 mb-1.5">Estado</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl bg-surface-800/60 border border-surface-700/30 text-surface-200 focus:outline-none focus:ring-1 focus:ring-primary-500/40 transition-all font-medium"
+            >
+              {STATUSES.map(s => (
+                <option key={s.id} value={s.id}>{s.label}</option>
               ))}
             </select>
           </div>

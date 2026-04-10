@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Plus, Calendar, Zap, Users, Filter, ChevronRight } from 'lucide-react'
+import { Plus, Calendar, Zap, Users, Filter, ChevronRight, Settings } from 'lucide-react'
 import { useTasks, useTeamMembers } from '../hooks/useTasks'
 import TaskBoard from '../components/tasks/TaskBoard'
 import TaskModal from '../components/tasks/TaskModal'
+import TeamManagementModal from '../components/tasks/TeamManagementModal'
 import Button from '../components/ui/Button'
 import NotificationBell from '../components/layout/NotificationBell'
 
@@ -10,6 +11,7 @@ export default function Tasks() {
   const [view, setView] = useState('day') // 'day' | 'status'
   const [memberId, setMemberId] = useState(localStorage.getItem('task_member_id') || 'all')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
 
   const { tasks, loading, addTask, updateTask, deleteTask } = useTasks(memberId)
@@ -72,11 +74,11 @@ export default function Tasks() {
             <div className="p-2 rounded-lg bg-surface-800/40 border border-surface-700/30 text-surface-500">
               <Users size={16} />
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 overflow-x-auto max-w-[400px] no-scrollbar">
               <button
                 onClick={() => { setMemberId('all'); localStorage.setItem('task_member_id', 'all'); }}
                 className={`
-                  px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border
+                  px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border whitespace-nowrap
                   ${memberId === 'all' 
                     ? 'bg-primary-600/10 text-primary-400 border-primary-500/30' 
                     : 'bg-transparent text-surface-500 border-transparent hover:text-surface-300'}
@@ -89,7 +91,7 @@ export default function Tasks() {
                   key={m.id}
                   onClick={() => { setMemberId(m.id); localStorage.setItem('task_member_id', m.id); }}
                   className={`
-                    px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border
+                    px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border whitespace-nowrap
                     ${memberId === m.id 
                       ? 'bg-primary-600/10 text-primary-400 border-primary-500/30' 
                       : 'bg-transparent text-surface-500 border-transparent hover:text-surface-300'}
@@ -104,6 +106,15 @@ export default function Tasks() {
 
         <div className="flex items-center gap-3">
           <NotificationBell />
+          <div className="w-[1px] h-6 bg-surface-800 mx-1" />
+          <button 
+            onClick={() => setIsTeamModalOpen(true)}
+            className="p-2 rounded-xl bg-surface-800/60 border border-surface-700/30 text-surface-400 hover:text-primary-400 hover:border-primary-500/30 transition-all flex items-center gap-2 group"
+            title="Gestionar Equipo"
+          >
+            <Users size={18} className="group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-bold uppercase hidden sm:inline">Equipo</span>
+          </button>
           <Button onClick={handleNewTask} className="shadow-lg shadow-primary-600/20">
             <Plus size={18} className="mr-2" />
             Nueva Tarea
@@ -139,6 +150,11 @@ export default function Tasks() {
         onClose={() => { setIsModalOpen(false); setEditingTask(null); }}
         onSave={handleSaveTask}
         task={editingTask}
+      />
+
+      <TeamManagementModal 
+        isOpen={isTeamModalOpen}
+        onClose={() => setIsTeamModalOpen(false)}
       />
     </div>
   )

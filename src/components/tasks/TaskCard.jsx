@@ -74,24 +74,33 @@ export default function TaskCard({ task, isDragging, onEdit, onDelete }) {
         </div>
       )}
 
-      {/* Footer: User & Actions */}
+      {/* Footer: Users & Actions */}
       <div className="flex items-center justify-between mt-1 pt-3 border-t border-surface-800/40">
         <div className="flex items-center gap-2">
-          {task.assigned_to ? (
-            <div 
-              className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shadow-sm"
-              style={{ backgroundColor: task.assigned_to.avatar_color }}
-              title={`Asignado a ${task.assigned_to.name}`}
-            >
-              {task.assigned_to.name[0].toUpperCase()}
-            </div>
-          ) : (
-            <div className="w-6 h-6 rounded-lg bg-surface-800 flex items-center justify-center text-surface-600">
-              <User size={12} />
-            </div>
-          )}
+          <div className="flex -space-x-2 overflow-hidden">
+            {task.assigned_members && task.assigned_members.length > 0 ? (
+              task.assigned_members.map((m, i) => (
+                <div 
+                  key={m.id}
+                  className="w-6 h-6 rounded-lg ring-2 ring-surface-900 flex items-center justify-center text-[10px] font-bold text-white shadow-sm"
+                  style={{ backgroundColor: m.avatar_color, zIndex: 10 - i }}
+                  title={m.name}
+                >
+                  {m.name[0].toUpperCase()}
+                </div>
+              ))
+            ) : (
+              <div className="w-6 h-6 rounded-lg bg-surface-800 flex items-center justify-center text-surface-600 ring-2 ring-surface-900">
+                <User size={12} />
+              </div>
+            )}
+          </div>
           <span className="text-[10px] font-medium text-surface-500 ml-1">
-            {task.assigned_to?.name || 'Sin asignar'}
+            {task.assigned_members && task.assigned_members.length > 0 
+              ? task.assigned_members.length === 1 
+                ? task.assigned_members[0].name 
+                : `${task.assigned_members.length} asignados`
+              : 'Sin asignar'}
           </span>
         </div>
 
