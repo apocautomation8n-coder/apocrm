@@ -73,9 +73,21 @@ export default function ConversationList({
                 <p className="text-sm font-medium text-surface-100 truncate">
                   {conv.contact?.name || conv.contact?.phone}
                 </p>
-                <span className="text-[11px] text-surface-500 ml-2 shrink-0">
-                  {formatTime(conv.lastTimestamp)}
-                </span>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  <span className="text-[11px] text-surface-500 group-hover:hidden">
+                    {formatTime(conv.lastTimestamp)}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onDelete(conv.contact?.id)
+                    }}
+                    className="hidden group-hover:flex p-1 rounded-md text-red-500/60 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                    title="Borrar conversación"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
               </div>
               
               <div className="flex items-center gap-1 mt-0.5 min-h-[4px]">
@@ -103,18 +115,6 @@ export default function ConversationList({
                 )}
               </div>
             </div>
-          </button>
-          
-          {/* Delete button (visible on hover) */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete(conv.contact?.id)
-            }}
-            className="absolute right-2 top-8 p-2 rounded-lg text-red-500/60 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-10"
-            title="Borrar conversación"
-          >
-            <Trash2 size={14} />
           </button>
         </div>
       ))}

@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react'
-import { Plus, Trash2, Shield, User, Mail, Save, X } from 'lucide-react'
+import { Plus, Trash2, Shield, User, Mail, Save, X, Pencil, Check } from 'lucide-react'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
@@ -25,6 +24,8 @@ export default function Users() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [editName, setEditName] = useState('')
   
   // New User Form State
   const [newUser, setNewUser] = useState({
@@ -116,6 +117,22 @@ export default function Users() {
     }
   }
 
+  const handleUpdateName = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: editName, updated_at: new Date() })
+        .eq('id', id)
+      
+      if (error) throw error
+      setUsers(users.map(u => u.id === id ? { ...u, full_name: editName } : u))
+      setEditingId(null)
+    } catch (err) {
+      console.error('Error updating name:', err)
+      alert('Error al actualizar nombre')
+    }
+  }
+
   const toggleNewUserView = (viewPath) => {
     setNewUser(prev => ({
       ...prev,
@@ -170,13 +187,31 @@ export default function Users() {
                 </tr>
               ) : users.map((user) => (
                 <tr key={user.id} className="hover:bg-surface-800/20 transition-colors">
-                  <td className="px-6 py-4">
+                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-400">
                         <User size={20} />
                       </div>
                       <div>
-                        <div className="font-medium text-surface-100">{user.full_name || 'Sin nombre'}</div>
+                        {editingId === user.id ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              className="px-2 py-1 bg-surface-800 border border-surface-700 rounded text-sm text-surface-100 outline-none focus:ring-1 focus:ring-primary-500"
+                              onKeyDown={(e) => e.key === 'Enter' && handleUpdateName(user.id)}
+                              autoFocus
+                            />
+                            <button onClick={() => handleUpdateName(user.id)} className="text-emerald-400 hover:text-emerald-300">
+                              <Check size={16} />
+                            </button>
+                            <button onClick={() => setEditingId(null)} className="text-red-400 hover:text-red-300">
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="font-medium text-surface-100">{user.full_name || 'Sin nombre'}</div>
+                        )}
                         <div className="text-sm text-surface-400">{user.email}</div>
                       </div>
                     </div>
@@ -204,13 +239,22 @@ export default function Users() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleDeleteUser(user.id)}
-                      className="p-2 text-surface-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10"
-                      title="Eliminar usuario"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => { setEditingId(user.id); setEditName(user.full_name || ''); }}
+                        className="p-2 text-surface-400 hover:text-primary-400 transition-colors rounded-lg hover:bg-primary-500/10"
+                        title="Editar nombre"
+                      >
+                        <Pencil size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="p-2 text-surface-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10"
+                        title="Eliminar usuario"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
