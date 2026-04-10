@@ -37,7 +37,14 @@ export default function FinanceExpenses({ hideHeader = false }) {
     bank_account_id: '',
   })
 
-  // ... rest of availableMonths memo ...
+  // Derive available months from dates
+  const availableMonths = useMemo(() => {
+    const months = new Set()
+    expenses.forEach(e => {
+      if (e.date) months.add(e.date.substring(0, 7)) // 'YYYY-MM'
+    })
+    return Array.from(months).sort().reverse()
+  }, [expenses])
 
   const fetchData = async () => {
     setLoading(true)
@@ -66,7 +73,17 @@ export default function FinanceExpenses({ hideHeader = false }) {
     return true
   })
 
-  // ... rest of totalsByCurrency memo ...
+  const totalsByCurrency = useMemo(() => {
+    return currencies.map(c => {
+      const perCurr = filtered.filter(e => (e.currency || 'USD') === c.code && (e.status || 'activo') === 'activo')
+      return {
+        code: c.code,
+        label: c.label,
+        symbol: c.symbol,
+        total: perCurr.reduce((sum, e) => sum + Number(e.amount || 0), 0)
+      }
+    })
+  }, [filtered])
 
   const handleSave = async () => {
     if (!form.description || !form.date || !form.amount) return toast.error('Descripción, monto y fecha son obligatorios')
