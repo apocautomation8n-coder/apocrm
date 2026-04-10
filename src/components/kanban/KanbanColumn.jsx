@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import KanbanCard from './KanbanCard'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
 import Select from '../ui/Select'
-import { Plus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { Plus, MoreHorizontal, Pencil, Trash2, GripVertical } from 'lucide-react'
 
 export default function KanbanColumn({
   stage,
@@ -25,7 +27,33 @@ export default function KanbanColumn({
   const [stageName, setStageName] = useState(stage.name)
   const [showCardDetail, setShowCardDetail] = useState(null)
 
-  const { setNodeRef, isOver } = useDroppable({ id: stage.id })
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ 
+    id: stage.id,
+    data: {
+      type: 'Stage',
+      stage
+    }
+  })
+
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({ 
+    id: stage.id,
+    data: {
+      type: 'Stage',
+      stage
+    }
+  })
+
+  const style = {
+    transition,
+    transform: CSS.Translate.toString(transform),
+  }
 
   const handleAddCard = () => {
     if (!selectedContactId) return
@@ -46,15 +74,24 @@ export default function KanbanColumn({
     <>
       <div
         ref={setNodeRef}
+        style={style}
         className={`
           min-w-[300px] w-[300px] flex flex-col rounded-2xl shrink-0
           bg-surface-900/50 border transition-all duration-200
-          ${isOver ? 'border-primary-500/50 bg-primary-500/5' : 'border-surface-800/40'}
+          ${isDragging ? 'opacity-50 border-primary-500 shadow-2xl z-50' : 'border-surface-800/40'}
+          ${isOver && !isDragging ? 'bg-primary-500/5 border-primary-500/30' : ''}
         `}
       >
         {/* Column header */}
-        <div className="px-4 py-3 border-b border-surface-800/40 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-surface-800/40 flex items-center justify-between group/header">
           <div className="flex items-center gap-2 min-w-0">
+            <div 
+              {...attributes} 
+              {...listeners}
+              className="p-1 -ml-1 rounded hover:bg-surface-800 text-surface-600 hover:text-surface-300 cursor-grab active:cursor-grabbing transition-colors"
+            >
+              <GripVertical size={14} />
+            </div>
             <div
               className="w-3 h-3 rounded-full shrink-0"
               style={{ backgroundColor: stage.color || '#6366f1' }}
@@ -125,7 +162,10 @@ export default function KanbanColumn({
         </div>
 
         {/* Cards */}
-        <div className="flex-1 p-2 space-y-2 overflow-y-auto min-h-[100px]">
+        <div 
+          ref={setDroppableRef}
+          className="flex-1 p-2 space-y-2 overflow-y-auto min-h-[100px]"
+        >
           {cards.map(card => (
             <KanbanCard
               key={card.id}

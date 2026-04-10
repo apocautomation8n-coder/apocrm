@@ -10,6 +10,7 @@ import {
 import {
   SortableContext,
   horizontalListSortingStrategy,
+  arrayMove
 } from '@dnd-kit/sortable'
 import { supabase } from '../../lib/supabaseClient'
 import KanbanColumn from './KanbanColumn'
@@ -22,6 +23,7 @@ export default function KanbanBoard() {
   const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCard, setActiveCard] = useState(null)
+  const [activeStage, setActiveStage] = useState(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -45,15 +47,58 @@ export default function KanbanBoard() {
   const getCardsForStage = (stageId) => cards.filter(c => c.stage_id === stageId)
 
   const handleDragStart = (event) => {
-    const card = cards.find(c => c.id === event.active.id)
-    setActiveCard(card)
+    const { active } = event
+    const type = active.data.current?.type
+
+    if (type === 'Stage') {
+      setActiveStage(active.data.current.stage)
+    } else {
+      const card = cards.find(c => c.id === active.id)
+      setActiveCard(card)
+    }
   }
 
   const handleDragEnd = async (event) => {
     setActiveCard(null)
+    setActiveStage(null)
     const { active, over } = event
     if (!over) return
 
+    const activeType = active.data.current?.type
+    const overType = over.data.current?.type
+
+    // ────── CASE 1: REORDERING STAGES ──────
+    if (activeType === 'Stage') {
+      if (active.id === over.id) return
+
+      const oldIndex = stages.findIndex((s) => s.id === active.id)
+      const newIndex = stages.findIndex((s) => s.id === over.id)
+
+      const newStages = arrayMove(stages, oldIndex, newIndex)
+      setStages(newStages)
+
+      // Persist to DB
+      const updates = newStages.map((s, index) => ({
+        id: s.id,
+        name: s.name,
+        color: s.color,
+        position: index + 1
+      }))
+
+      // We use upsert for batch update if ID is provided
+      const { error } = await supabase
+        .from('pipeline_stages')
+        .upsert(updates)
+
+      if (error) {
+        toast.error('Error guardando orden de etapas')
+        console.error(error)
+        fetchData() // rollback
+      }
+      return
+    }
+
+    // ────── CASE 2: MOVING CARDS ──────
     const cardId = active.id
     let targetStageId = over.id
 
@@ -61,7 +106,6 @@ export default function KanbanBoard() {
     const overCard = cards.find(c => c.id === over.id)
     if (overCard) targetStageId = overCard.stage_id
 
-    // Check if it's dropped on a stage column
     const isStage = stages.find(s => s.id === targetStageId)
     if (!isStage) return
 
@@ -192,6 +236,21 @@ export default function KanbanBoard() {
       <DragOverlay>
         {activeCard && (
           <KanbanCard card={activeCard} isDragging />
+        )}
+        {activeStage && (
+          <div className="opacity-80 rotate-1 shadow-2xl scale-105 pointer-events-none">
+            <KanbanColumn
+              stage={activeStage}
+              cards={getCardsForStage(activeStage.id)}
+              contacts={contacts}
+              // These props won't be used during drag preview but are required
+              onAddCard={() => {}}
+              onUpdateCard={() => {}}
+              onDeleteCard={() => {}}
+              onUpdateStage={() => {}}
+              onDeleteStage={() => {}}
+            />
+          </div>
         )}
       </DragOverlay>
     </DndContext>
