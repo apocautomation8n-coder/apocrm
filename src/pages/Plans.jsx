@@ -23,7 +23,7 @@ export default function Plans() {
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({
-    client_name: '', freelancer: '', monthly_fee: '', freelancer_fee: '0', expenses: '0', status: 'activo', notes: '', currency: 'USD'
+    client_name: '', freelancer: '', monthly_fee: '', freelancer_fee: '0', expenses: '0', status: 'activo', notes: '', currency: 'USD', billing_day: '1'
   })
 
   const fetchPlans = async () => {
@@ -76,6 +76,7 @@ export default function Plans() {
       status: form.status,
       currency: form.currency || 'USD',
       notes: form.notes || null,
+      billing_day: parseInt(form.billing_day, 10) || 1,
     }
 
     if (editing) {
@@ -109,7 +110,7 @@ export default function Plans() {
   const closeModal = () => {
     setShowModal(false)
     setEditing(null)
-    setForm({ client_name: '', freelancer: '', monthly_fee: '', freelancer_fee: '0', expenses: '0', status: 'activo', notes: '', currency: 'USD' })
+    setForm({ client_name: '', freelancer: '', monthly_fee: '', freelancer_fee: '0', expenses: '0', status: 'activo', notes: '', currency: 'USD', billing_day: '1' })
   }
 
   return (
@@ -180,6 +181,7 @@ export default function Plans() {
               <thead>
                 <tr className="border-b border-surface-800/60">
                   <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Cliente</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Día Cobro</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Freelancer</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-surface-400 uppercase tracking-wider">Cobro Mensual</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-surface-400 uppercase tracking-wider">Freelancer</th>
@@ -195,6 +197,7 @@ export default function Plans() {
                   return (
                     <tr key={plan.id} className="border-b border-surface-800/30 hover:bg-surface-800/30 transition-colors">
                       <td className="px-5 py-3.5 text-surface-200 font-medium">{plan.client_name}</td>
+                      <td className="px-5 py-3.5 text-surface-400 text-center">{plan.billing_day || 1}</td>
                       <td className="px-5 py-3.5 text-surface-400">{plan.freelancer || '—'}</td>
                       <td className="px-5 py-3.5 text-right text-surface-200">
                         <div className="flex items-center justify-end gap-1">
@@ -251,6 +254,7 @@ export default function Plans() {
                                 status: plan.status,
                                 currency: plan.currency || 'USD',
                                 notes: plan.notes || '',
+                                billing_day: String(plan.billing_day || 1),
                               })
                               setShowModal(true)
                             }}
@@ -273,7 +277,7 @@ export default function Plans() {
                 {/* Currency Table Totals */}
                 {totalsByCurrency.map(t => (
                   <tr key={t.code} className="bg-surface-800/20 border-t border-surface-700/50">
-                    <td className="px-5 py-3 text-surface-400 font-bold" colSpan={2}>SUBTOTAL ({t.label})</td>
+                    <td className="px-5 py-3 text-surface-400 font-bold" colSpan={3}>SUBTOTAL ({t.label})</td>
                     <td className="px-5 py-3 text-right text-surface-200 font-bold">
                       <div className="flex items-center justify-end gap-1">
                         <span className="text-[10px] opacity-70">{t.code}</span>
@@ -311,7 +315,10 @@ export default function Plans() {
       <Modal isOpen={showModal} onClose={closeModal} title={editing ? 'Editar mantenimiento' : 'Agregar mantenimiento'}>
         <div className="space-y-4">
           <Input label="Cliente" value={form.client_name} onChange={(e) => setForm(f => ({ ...f, client_name: e.target.value }))} placeholder="Nombre del cliente" />
-          <Input label="Freelancer" value={form.freelancer} onChange={(e) => setForm(f => ({ ...f, freelancer: e.target.value }))} placeholder="Nombre (opcional)" />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Freelancer" value={form.freelancer} onChange={(e) => setForm(f => ({ ...f, freelancer: e.target.value }))} placeholder="Nombre (opcional)" />
+            <Input label="Día del mes (Cobro)" type="number" min="1" max="31" value={form.billing_day} onChange={(e) => setForm(f => ({ ...f, billing_day: e.target.value }))} placeholder="1 al 31" />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <Select label="Moneda" value={form.currency} onChange={(e) => setForm(f => ({ ...f, currency: e.target.value }))}>
               {currencies.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}

@@ -20,7 +20,7 @@ import { supabase } from '../lib/supabaseClient'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, Trash2, Pencil, Globe, Video, ExternalLink, ArrowRightLeft, User, Check, Search, CheckSquare } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, Trash2, Pencil, Globe, Video, ExternalLink, ArrowRightLeft, User, Check, Search, CheckSquare, DollarSign } from 'lucide-react'
 import Select from '../components/ui/Select'
 import toast from 'react-hot-toast'
 import { useTasks } from '../hooks/useTasks'
@@ -45,6 +45,9 @@ export default function Calendar() {
   const [contacts, setContacts] = useState([])
   const [contactSearch, setContactSearch] = useState('')
   const [showContactPicker, setShowContactPicker] = useState(false)
+
+  // Plans integration
+  const [plans, setPlans] = useState([])
   
   // Timezone helper state
   const [tzForm, setTzForm] = useState({ country: 'AR', time: '' })
@@ -76,9 +79,18 @@ export default function Calendar() {
     if (!error && data) setContacts(data)
   }
 
+  const fetchPlans = async () => {
+    const { data, error } = await supabase
+      .from('monthly_plans')
+      .select('id, client_name, billing_day, status, currency, monthly_fee')
+      .eq('status', 'activo')
+    if (!error && data) setPlans(data)
+  }
+
   useEffect(() => { 
     fetchEvents() 
     fetchContacts()
+    fetchPlans()
   }, [])
 
   const monthStart = startOfMonth(currentMonth)
@@ -110,7 +122,14 @@ export default function Calendar() {
       title: t.title,
     }))
 
-    return [...dayEvents, ...dayTasks]
+    const dayPlans = plans.filter(p => p.billing_day === date.getDate()).map(p => ({
+      ...p,
+      isPlan: true,
+      title: `Cobro: ${p.client_name} - ${p.currency || 'USD'} ${p.monthly_fee}`,
+      id: `plan-${p.id}-${dateStr}`
+    }))
+
+    return [...dayEvents, ...dayTasks, ...dayPlans]
   }
 
   const handleSaveTask = async (taskData) => {
@@ -357,16 +376,19 @@ export default function Calendar() {
                         if (evt.isTask) {
                           setEditingTask(evt);
                           setIsTaskModalOpen(true);
-                        } else {
+                        } else if (!evt.isPlan) {
                           openEditEvent(evt);
                         }
                       }}
                       className={`px-1.5 py-0.5 rounded text-[10px] font-medium truncate flex items-center gap-1
-                        ${evt.isTask ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-primary-500/20 text-primary-300'}`}
+                        ${evt.isPlan ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                        : evt.isTask ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' 
+                        : 'bg-primary-500/20 text-primary-300'}`}
                       title={evt.title}
                     >
+                      {evt.isPlan && <DollarSign size={10} />}
                       {evt.isTask && <CheckSquare size={10} />}
-                      {evt.start_time && !evt.isTask && <span className="mr-1">{evt.start_time}</span>}
+                      {evt.start_time && !evt.isTask && !evt.isPlan && <span className="mr-1">{evt.start_time}</span>}
                       {evt.title}
                     </div>
                   ))}
