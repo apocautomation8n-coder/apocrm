@@ -52,7 +52,7 @@ export default function OutboundAgents() {
           </div>
         )}
         {activeTab === 'followups' && (
-          <div className="absolute inset-0 overflow-y-auto">
+          <div className="absolute inset-0 overflow-y-auto px-6 py-4">
             <FollowUps hideHeader={true} />
           </div>
         )}
