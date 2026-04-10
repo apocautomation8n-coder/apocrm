@@ -1,3 +1,4 @@
+import { useDraggable } from '@dnd-kit/core'
 import { format, isPast, isToday as isDateToday, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Calendar, Clock, Tag, User, Pencil, Trash2, AlertCircle } from 'lucide-react'
@@ -10,6 +11,14 @@ const PRIORITY_COLORS = {
 }
 
 export default function TaskCard({ task, isDragging, onEdit, onDelete }) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: task.id,
+  })
+
+  const style = transform
+    ? { transform: `translate(${transform.x}px, ${transform.y}px)` }
+    : undefined
+
   const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isDateToday(parseISO(task.due_date)) && task.status !== 'done'
   
   const formatDate = (dateStr) => {
@@ -21,9 +30,13 @@ export default function TaskCard({ task, isDragging, onEdit, onDelete }) {
 
   return (
     <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
       className={`
-        group relative flex flex-col gap-3 p-4 rounded-2xl bg-surface-900 border transition-all
-        ${isDragging ? 'opacity-50 ring-2 ring-primary-500 shadow-2xl' : 'hover:border-surface-700/50 shadow-md'}
+        group relative flex flex-col gap-3 p-4 rounded-2xl bg-surface-900 border transition-all cursor-grab active:cursor-grabbing
+        ${isDragging ? 'opacity-50 ring-2 ring-primary-500 shadow-2xl scale-105 rotate-2' : 'hover:border-surface-700/50 shadow-md'}
         ${isOverdue ? 'border-red-500/50 bg-red-500/5' : 'border-surface-800/60'}
       `}
     >

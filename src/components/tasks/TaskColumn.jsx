@@ -37,16 +37,14 @@ export default function TaskColumn({ id, title, icon: Icon, iconColor, tasks, on
 
       {/* Cards List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
-        <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-          {tasks.map(task => (
-            <TaskCard 
-              key={task.id} 
-              task={task} 
-              onEdit={onEditTask} 
-              onDelete={onDeleteTask} 
-            />
-          ))}
-        </SortableContext>
+        {tasks.map(task => (
+          <TaskCard 
+            key={task.id} 
+            task={task} 
+            onEdit={onEditTask} 
+            onDelete={onDeleteTask} 
+          />
+        ))}
         
         {tasks.length === 0 && (
           <div className="h-24 flex items-center justify-center border-2 border-dashed border-surface-800 rounded-2xl text-[10px] font-bold text-surface-600 uppercase tracking-widest">
