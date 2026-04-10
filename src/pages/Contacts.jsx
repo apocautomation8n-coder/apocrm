@@ -7,6 +7,7 @@ import Input from '../components/ui/Input'
 import { Users, Search, Plus, Pencil, Trash2, MessageSquare } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
+import { getPhoneVariants, mergeContacts } from '../hooks/useMessages'
 
 export default function Contacts() {
   const [contacts, setContacts] = useState([])
@@ -37,16 +38,47 @@ export default function Contacts() {
   })
 
   const handleSave = async () => {
-    if (!form.phone.trim()) return toast.error('El teléfono es obligatorio')
+    const rawPhone = form.phone.trim()
+    if (!rawPhone) return toast.error('El teléfono es obligatorio')
 
-    if (editing) {
-      const { error } = await supabase.from('contacts').update({ name: form.name, phone: form.phone, email: form.email }).eq('id', editing.id)
-      if (error) return toast.error('Error actualizando contacto')
-      toast.success('Contacto actualizado')
-    } else {
-      const { error } = await supabase.from('contacts').insert({ name: form.name, phone: form.phone, email: form.email })
-      if (error) return toast.error(error.message.includes('duplicate') ? 'Ese teléfono ya existe' : 'Error creando contacto')
-      toast.success('Contacto creado')
+    try {
+      if (editing) {
+        const { error } = await supabase.from('contacts').update({ name: form.name, phone: rawPhone, email: form.email }).eq('id', editing.id)
+        if (error) throw error
+        toast.success('Contacto actualizado')
+      } else {
+        const variants = getPhoneVariants(rawPhone)
+        const { data: existing, error: findError } = await supabase
+          .from('contacts')
+          .select('*')
+          .in('phone', variants)
+
+        if (findError) throw findError
+
+        if (existing && existing.length > 0) {
+          if (rawPhone.startsWith('54')) {
+            // ARGENTINA: fusionar con el existente
+            const main = existing[0]
+            await supabase.from('contacts').update({ name: form.name || main.name, email: form.email || main.email }).eq('id', main.id)
+            
+            // Si hay más de uno (ej: ya había dos duplicados), fusionarlos todos
+            for (let i = 1; i < existing.length; i++) {
+              await mergeContacts(main.id, existing[i].id)
+            }
+            
+            toast.success('Contacto de Argentina fusionado con éxito')
+          } else {
+            return toast.error('Ese teléfono ya existe en el sistema')
+          }
+        } else {
+          const { error } = await supabase.from('contacts').insert({ name: form.name, phone: rawPhone, email: form.email })
+          if (error) throw error
+          toast.success('Contacto creado')
+        }
+      }
+    } catch (err) {
+      console.error('Error saving contact:', err)
+      toast.error('Error al guardar el contacto')
     }
 
     setShowModal(false)

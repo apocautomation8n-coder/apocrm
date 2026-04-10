@@ -81,10 +81,15 @@ export default function ChatWindow({ agent, contact, onToggleBot }) {
       <div className="px-5 py-3 border-b border-surface-800/60 bg-surface-900/80 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
-            {(contact.name || contact.phone || '?')[0].toUpperCase()}
+            {((!contact.name || contact.name === '..' || contact.name === '**') ? contact.phone : contact.name)[0].toUpperCase()}
           </div>
-          <div>
-            <p className="text-sm font-semibold text-surface-100">{contact.name || contact.phone}</p>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-surface-100 truncate" title={contact.name}>
+              {(!contact.name || contact.name === '..' || contact.name === '**') 
+                ? contact.phone 
+                : contact.name
+              }
+            </p>
             <p className="text-xs text-surface-500">{contact.phone}</p>
           </div>
         </div>

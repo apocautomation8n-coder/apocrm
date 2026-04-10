@@ -70,8 +70,11 @@ export default function ConversationList({
             {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-surface-100 truncate">
-                  {conv.contact?.name || conv.contact?.phone}
+                <p className="text-sm font-medium text-surface-100 truncate" title={conv.contact?.name}>
+                  {(!conv.contact?.name || conv.contact.name === '..' || conv.contact.name === '**') 
+                    ? conv.contact?.phone 
+                    : conv.contact.name
+                  }
                 </p>
                 <div className="flex items-center gap-2 shrink-0 ml-2">
                   <span className="text-[11px] text-surface-500 group-hover:hidden">

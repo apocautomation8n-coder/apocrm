@@ -37,21 +37,13 @@ export default function ContactPanel({ contact, onClose, onToggleBot }) {
           <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-bold text-2xl shadow-xl shadow-primary-600/20">
             {(contact.name || contact.phone || '?')[0].toUpperCase()}
           </div>
-          <p className="mt-3 text-base font-semibold text-surface-100">
+          <p className="mt-3 text-base font-semibold text-surface-100 text-center px-2 line-clamp-2" title={contact.name}>
             {contact.name || 'Sin nombre'}
           </p>
         </div>
 
         {/* Details */}
         <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-800/50">
-            <User size={16} className="text-surface-500 shrink-0" />
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-surface-500 font-medium">Nombre</p>
-              <p className="text-sm text-surface-200">{contact.name || 'Sin nombre'}</p>
-            </div>
-          </div>
-
           <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-800/50">
             <Phone size={16} className="text-surface-500 shrink-0" />
             <div>

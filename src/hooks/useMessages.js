@@ -4,6 +4,33 @@ import toast from 'react-hot-toast'
 
 const N8N_WEBHOOK = import.meta.env.VITE_N8N_WEBHOOK
 
+/**
+ * Normalizes a phone number.
+ * For Argentina (54), it strips the '9' prefix if present to create a canonical format.
+ */
+export function normalizePhone(phone) {
+  if (!phone) return ''
+  let clean = phone.replace(/\D/g, '')
+  if (clean.startsWith('549')) {
+    return '54' + clean.slice(3)
+  }
+  return clean
+}
+
+/**
+ * Returns potential variants of an Argentinian phone number (with and without 9).
+ */
+export function getPhoneVariants(phone) {
+  const clean = phone.replace(/\D/g, '')
+  if (!clean.startsWith('54')) return [clean]
+  
+  if (clean.startsWith('549')) {
+    return [clean, '54' + clean.slice(3)]
+  } else {
+    return [clean, '549' + clean.slice(2)]
+  }
+}
+
 export function useAgents() {
   const [agents, setAgents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -138,9 +165,15 @@ export function useConversations(agentId) {
     }
   }
 
+  const markAsReadLocally = useCallback((contactId) => {
+    setConversations(prev => prev.map(c => 
+      c.contact.id === contactId ? { ...c, unreadCount: 0 } : c
+    ))
+  }, [])
+
   useEffect(() => { fetchConversations() }, [fetchConversations])
 
-  return { conversations, loading, refetch: fetchConversations, toggleContactBot }
+  return { conversations, loading, refetch: fetchConversations, toggleContactBot, markAsReadLocally }
 }
 
 export function useMessages(agentId, contactId) {
@@ -354,4 +387,48 @@ export async function removeLabelFromContact(contactId, labelId) {
     .eq('contact_id', contactId)
     .eq('label_id', labelId)
   return { error }
+}
+
+/**
+ * Merges a source contact into a target contact.
+ * Moves all related data and deletes the duplicate.
+ */
+export async function mergeContacts(targetId, sourceId) {
+  console.log(`Merging contact ${sourceId} into ${targetId}`)
+  
+  // 1. Update messages
+  const { error: msgErr } = await supabase
+    .from('messages')
+    .update({ contact_id: targetId })
+    .eq('contact_id', sourceId)
+  if (msgErr) console.error('Error merging messages:', msgErr)
+
+  // 2. Update pipeline cards
+  const { error: cardErr } = await supabase
+    .from('pipeline_cards')
+    .update({ contact_id: targetId })
+    .eq('contact_id', sourceId)
+  if (cardErr) console.error('Error merging cards:', cardErr)
+
+  // 3. Update follow ups
+  const { error: fuErr } = await supabase
+    .from('follow_ups')
+    .update({ contact_id: targetId })
+    .eq('contact_id', sourceId)
+  if (fuErr) console.error('Error merging followups:', fuErr)
+
+  // 4. Update labels
+  const { data: sourceLabels } = await supabase.from('contact_labels').select('label_id').eq('contact_id', sourceId)
+  if (sourceLabels?.length) {
+    for (const l of sourceLabels) {
+      // Direct insert, ignore if already exists
+      await supabase.from('contact_labels').insert({ contact_id: targetId, label_id: l.label_id })
+    }
+  }
+
+  // 5. Delete source contact
+  const { error: delErr } = await supabase.from('contacts').delete().eq('id', sourceId)
+  if (delErr) console.error('Error deleting merged contact:', delErr)
+
+  return { success: !delErr }
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAgents, useConversations, useContacts, deleteConversationByContact } from '../hooks/useMessages'
+import { useAgents, useConversations, useContacts, deleteConversationByContact, normalizePhone, getPhoneVariants, mergeContacts } from '../hooks/useMessages'
 import { useRealtime } from '../hooks/useRealtime'
 import ConversationList from '../components/chat/ConversationList'
 import ChatWindow from '../components/chat/ChatWindow'
@@ -33,7 +33,7 @@ export default function OutboundAgents() {
   const { labels } = useLabels()
 
   const activeAgent = selectedAgent || agents[0]
-  const { conversations, loading: convsLoading, refetch, toggleContactBot } = useConversations(activeAgent?.id)
+  const { conversations, loading: convsLoading, refetch, toggleContactBot, markAsReadLocally } = useConversations(activeAgent?.id)
 
   // Sync selectedContact with latest data from conversations (important for bot_enabled status)
   const currentContact = conversations.find(c => c.contact?.id === selectedContact?.id)?.contact || selectedContact
@@ -67,26 +67,49 @@ export default function OutboundAgents() {
   }
 
   const handleAddContact = async () => {
-    if (!newContactPhone.trim()) return
+    const rawPhone = newContactPhone.trim()
+    if (!rawPhone) return
+    
     try {
-      // 1. Find or create contact direktly in Supabase
-      let { data: contact, error: findError } = await supabase
+      const variants = getPhoneVariants(rawPhone)
+      
+      // 1. Find existing contacts for any of the variants
+      const { data: existing, error: findError } = await supabase
         .from('contacts')
-        .select('id')
-        .eq('phone', newContactPhone.trim())
-        .single()
+        .select('*')
+        .in('phone', variants)
 
-      if (findError && findError.code !== 'PGRST116') { // PGRST116 is "not found"
-        throw findError
+      if (findError) throw findError
+
+      let targetContact = null
+
+      if (existing && existing.length > 0) {
+        // We found at least one contact
+        if (existing.length > 1 && rawPhone.startsWith('54')) {
+          // ARGENTINA: Multiple contacts found for variants (e.g. one with 9, one without)
+          // Fusionar automáticamente
+          const main = existing[0]
+          const duplicate = existing[1]
+          await mergeContacts(main.id, duplicate.id)
+          targetContact = main
+          toast.success('Contactos de Argentina fusionados automáticamente')
+        } else {
+          // Just one found, or international (don't auto-merge international)
+          targetContact = existing[0]
+          if (existing.length > 1) {
+            toast.error('Se detectaron múltiples contactos para este número (Internacional). Se usará el primero.')
+          }
+        }
       }
 
-      let contactId = contact?.id
+      let contactId = targetContact?.id
 
       if (!contactId) {
+        // 2. Create if not found
         const { data: newContact, error: createErr } = await supabase
           .from('contacts')
           .insert({ 
-            phone: newContactPhone.trim(), 
+            phone: rawPhone, 
             name: newContactName.trim() || null, 
             email: newContactEmail.trim() || null,
             bot_enabled: true 
@@ -105,9 +128,10 @@ export default function OutboundAgents() {
       setNewContactEmail('')
       setContactSearch('')
       await refetch()
-      setSelectedContact({ id: contactId, name: newContactName || newContactPhone, phone: newContactPhone })
+      setSelectedContact({ id: contactId, name: newContactName || rawPhone, phone: rawPhone })
     } catch (err) {
       console.error('Error adding contact:', err)
+      toast.error('Error al procesar el contacto')
     }
   }
 
@@ -246,7 +270,10 @@ export default function OutboundAgents() {
           <ConversationList
             conversations={filteredConversations}
             selectedContactId={currentContact?.id}
-            onSelect={setSelectedContact}
+            onSelect={(contact) => {
+              setSelectedContact(contact)
+              markAsReadLocally(contact.id)
+            }}
             onDelete={handleDeleteConversation}
             onAdd={() => setShowAddContact(true)}
             loading={convsLoading}
