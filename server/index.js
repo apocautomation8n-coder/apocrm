@@ -15,7 +15,9 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 app.use(cors())
-app.use(express.json())
+// Capture as text to handle malformed JSON from n8n
+app.use(express.text({ type: ['application/json', 'text/plain'], limit: '10mb' }))
+app.use(express.json({ limit: '10mb' }))
 
 // Routes
 app.use('/api/messages', messagesRouter)

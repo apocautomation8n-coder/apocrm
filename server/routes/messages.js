@@ -1,13 +1,14 @@
 import { Router } from 'express'
 import supabase from '../supabaseAdmin.js'
-import { normalizePhone, sendSuccess, sendError } from '../utils.js'
+import { normalizePhone, sendSuccess, sendError, laxParse } from '../utils.js'
 
 const router = Router()
 
 // POST /api/messages/inbound — receive inbound message from n8n / Evolution API
 router.post('/inbound', async (req, res) => {
   try {
-    const { name, phone, timestamp, message, agent_slug } = req.body
+    const body = laxParse(req.body)
+    const { name, phone, timestamp, message, agent_slug } = body
     const normalizedPhone = normalizePhone(phone)
 
     if (!normalizedPhone || !agent_slug) {
@@ -73,7 +74,8 @@ router.post('/inbound', async (req, res) => {
 // POST /api/messages/bot-outbound — receive outbound bot message from n8n to log it into CRM
 router.post('/bot-outbound', async (req, res) => {
   try {
-    const { phone, message, agent_slug, timestamp } = req.body
+    const body = laxParse(req.body)
+    const { phone, message, agent_slug, timestamp } = body
     const normalizedPhone = normalizePhone(phone)
 
     if (!normalizedPhone || !agent_slug) {
