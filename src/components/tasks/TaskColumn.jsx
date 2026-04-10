@@ -3,7 +3,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import TaskCard from './TaskCard'
 import { SortAsc } from 'lucide-react'
 
-export default function TaskColumn({ id, title, icon, tasks, onEditTask, onDeleteTask }) {
+export default function TaskColumn({ id, title, icon: Icon, iconColor, tasks, onEditTask, onDeleteTask }) {
   const { setNodeRef, isOver } = useDroppable({ id })
 
   return (
@@ -17,7 +17,7 @@ export default function TaskColumn({ id, title, icon, tasks, onEditTask, onDelet
       {/* Header */}
       <div className="p-4 border-b border-surface-800/40 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-lg">{icon}</span>
+          {Icon && <Icon size={18} className={iconColor || 'text-surface-400'} />}
           <h3 className="text-sm font-bold text-surface-200 uppercase tracking-wider">{title}</h3>
           <span className="px-2 py-0.5 rounded-full bg-surface-800 text-[10px] font-bold text-surface-500 border border-surface-700/50">
             {tasks.length}

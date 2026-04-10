@@ -24,6 +24,16 @@ import {
   startOfTomorrow,
   endOfDay
 } from 'date-fns'
+import { 
+  CalendarCheck, 
+  CalendarRange, 
+  CalendarDays, 
+  Archive, 
+  Circle, 
+  Activity, 
+  AlertCircle, 
+  CheckCircle2 
+} from 'lucide-react'
 import TaskCard from './TaskCard'
 import TaskColumn from './TaskColumn'
 import { supabase } from '../../lib/supabaseClient'
@@ -51,17 +61,17 @@ export default function TaskBoard({ tasks, view, activeMemberId, onUpdateTask, o
   const columns = useMemo(() => {
     if (view === 'day') {
       return [
-        { id: 'hoy', title: 'Hoy', icon: '📅' },
-        { id: 'manana', title: 'Mañana', icon: '📅' },
-        { id: 'semana', title: 'Esta Semana', icon: '📅' },
-        { id: 'backlog', title: 'Backlog', icon: '🗂' }
+        { id: 'hoy', title: 'Hoy', icon: CalendarCheck, color: 'text-primary-400' },
+        { id: 'manana', title: 'Mañana', icon: CalendarRange, color: 'text-amber-400' },
+        { id: 'semana', title: 'Esta Semana', icon: CalendarDays, color: 'text-blue-400' },
+        { id: 'backlog', title: 'Backlog', icon: Archive, color: 'text-surface-500' }
       ]
     } else {
       return [
-        { id: 'todo', title: 'To Do', icon: '🔵' },
-        { id: 'in_progress', title: 'En Progreso', icon: '🟡' },
-        { id: 'blocked', title: 'Bloqueado', icon: '🔴' },
-        { id: 'done', title: 'Hecho', icon: '✅' }
+        { id: 'todo', title: 'To Do', icon: Circle, color: 'text-surface-400' },
+        { id: 'in_progress', title: 'En Progreso', icon: Activity, color: 'text-amber-400' },
+        { id: 'blocked', title: 'Bloqueado', icon: AlertCircle, color: 'text-red-400' },
+        { id: 'done', title: 'Hecho', icon: CheckCircle2, color: 'text-emerald-400' }
       ]
     }
   }, [view])
@@ -205,6 +215,7 @@ export default function TaskBoard({ tasks, view, activeMemberId, onUpdateTask, o
             id={column.id}
             title={column.title}
             icon={column.icon}
+            iconColor={column.color}
             tasks={columnTasks[column.id]}
             onEditTask={onEditTask}
             onDeleteTask={onDeleteTask}
