@@ -1,13 +1,17 @@
 import { useState } from 'react'
-import { DollarSign, CreditCard, TrendingDown } from 'lucide-react'
+import { DollarSign, CreditCard, TrendingDown, BarChart3, Wallet } from 'lucide-react'
+import FinanceDashboard from './FinanceDashboard'
 import FinanceProjects from './FinanceProjects'
 import Plans from './Plans'
 import FinanceExpenses from './FinanceExpenses'
+import FinanceCash from './FinanceCash'
 
 export default function Finance() {
-  const [activeTab, setActiveTab] = useState('projects')
+  const [activeTab, setActiveTab] = useState('dashboard')
 
   const tabs = [
+    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+    { id: 'cash', label: 'Caja', icon: Wallet },
     { id: 'projects', label: 'Proyectos', icon: DollarSign },
     { id: 'plans', label: 'Mensualidades', icon: CreditCard },
     { id: 'expenses', label: 'Egresos', icon: TrendingDown },
@@ -25,13 +29,13 @@ export default function Finance() {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex border-b border-surface-800/60">
+      <div className="flex border-b border-surface-800/60 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`
-              flex items-center gap-2 px-6 py-3 text-sm font-medium transition-all relative
+              flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all relative whitespace-nowrap cursor-pointer
               ${activeTab === tab.id 
                 ? 'text-primary-400' 
                 : 'text-surface-500 hover:text-surface-300'}
@@ -48,6 +52,8 @@ export default function Finance() {
 
       {/* Tab Content */}
       <div className="animate-fade-in">
+        {activeTab === 'dashboard' && <FinanceDashboard />}
+        {activeTab === 'cash' && <FinanceCash hideHeader={true} />}
         {activeTab === 'projects' && <FinanceProjects hideHeader={true} />}
         {activeTab === 'plans' && <Plans hideHeader={true} />}
         {activeTab === 'expenses' && <FinanceExpenses hideHeader={true} />}
