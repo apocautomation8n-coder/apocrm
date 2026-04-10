@@ -16,6 +16,7 @@ import {
   Zap,
   Calculator,
   History,
+  CheckSquare,
 } from 'lucide-react'
 
 const navItems = [
@@ -23,6 +24,7 @@ const navItems = [
   { to: '/metrics',   icon: BarChart3,     label: 'Métricas' },
   { to: '/contacts',  icon: Users,         label: 'Contactos' },
   { to: '/pipeline',  icon: Kanban,        label: 'Pipeline' },
+  { to: '/tasks',     icon: CheckSquare,   label: 'Tareas', badgeKey: 'tasks' },
   { to: '/calendar',  icon: CalendarDays,  label: 'Calendario' },
   { to: '/followups', icon: History,       label: 'Seguimientos' },
   { to: '/finance',   icon: DollarSign,    label: 'Finanzas' },
@@ -34,6 +36,7 @@ const navItems = [
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [tasksCount, setTasksCount] = useState(0)
   const { signOut, user } = useAuth()
   const location = useLocation()
 
@@ -53,14 +56,38 @@ export default function Sidebar() {
     }
     fetchUnread()
 
-    const channel = supabase
+    const fetchTasksCount = async () => {
+      // For the sidebar badge, we could count ALL tasks due today, 
+      // but usually users want to see THEIR tasks. 
+      // For now, let's count all pending tasks due today/overdue.
+      const today = new Date().toISOString().split('T')[0]
+      const { count } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .lte('due_date', today)
+        .neq('status', 'done')
+      setTasksCount(count || 0)
+    }
+    fetchTasksCount()
+
+    const msgChannel = supabase
       .channel('unread-badge')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
         fetchUnread()
       })
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    const taskChannel = supabase
+      .channel('tasks-badge')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+        fetchTasksCount()
+      })
+      .subscribe()
+
+    return () => { 
+      supabase.removeChannel(msgChannel)
+      supabase.removeChannel(taskChannel)
+    }
   }, [])
 
   return (
@@ -119,6 +146,16 @@ export default function Sidebar() {
                     bg-red-500 text-white
                   `}>
                     {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+                {item.badgeKey === 'tasks' && tasksCount > 0 && (
+                  <span className={`
+                    ${collapsed ? 'absolute -top-1 -right-1' : 'ml-auto'}
+                    flex items-center justify-center min-w-[20px] h-5
+                    px-1.5 text-[10px] font-bold rounded-full
+                    bg-amber-500 text-white
+                  `}>
+                    {tasksCount > 99 ? '99+' : tasksCount}
                   </span>
                 )}
               </>

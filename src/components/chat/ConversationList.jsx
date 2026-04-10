@@ -73,11 +73,22 @@ export default function ConversationList({
                 <p className="text-sm font-medium text-surface-100 truncate">
                   {conv.contact?.name || conv.contact?.phone}
                 </p>
-                <span className="text-[11px] text-surface-500 ml-2 shrink-0">
-                  {formatTime(conv.lastTimestamp)}
-                </span>
+                <div className="flex items-center gap-1 mt-0.5 min-h-[4px]">
+                  {conv.contact?.labels?.map(label => (
+                    <div 
+                      key={label.id}
+                      className="w-2.5 h-1 rounded-full shadow-sm"
+                      style={{ backgroundColor: label.color }}
+                      title={label.name}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="flex items-center justify-between mt-0.5">
+              <span className="text-[11px] text-surface-500 ml-2 shrink-0">
+                {formatTime(conv.lastTimestamp)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between mt-0.5">
                 <p className="text-xs text-surface-400 truncate">
                   {conv.lastDirection === 'outbound' && (
                     <span className="text-surface-500">Tú: </span>

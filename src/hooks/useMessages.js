@@ -74,7 +74,15 @@ export function useConversations(agentId) {
         media_type,
         timestamp,
         is_read,
-        contacts (id, name, phone, bot_enabled)
+        contacts (
+          id, 
+          name, 
+          phone, 
+          bot_enabled,
+          contact_labels (
+            labels (id, name, color)
+          )
+        )
       `)
       .eq('agent_id', agentId)
       .order('timestamp', { ascending: false })
@@ -91,8 +99,11 @@ export function useConversations(agentId) {
     msgs.forEach(msg => {
       const cid = msg.contact_id
       if (!contactMap[cid]) {
+        // Flatten labels from contacts -> contact_labels -> labels
+        const flatLabels = msg.contacts?.contact_labels?.map(cl => cl.labels).filter(Boolean) || []
+        
         contactMap[cid] = {
-          contact: msg.contacts,
+          contact: { ...msg.contacts, labels: flatLabels },
           lastMessage: msg.content || (msg.media_type === 'audio' ? '🎵 Audio' : ''),
           lastDirection: msg.direction,
           lastTimestamp: msg.timestamp,
@@ -288,4 +299,59 @@ export async function uploadAudio(blob) {
     .getPublicUrl(data.path)
 
   return publicUrl
+}
+
+export function useLabels() {
+  const [labels, setLabels] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchLabels = useCallback(async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('labels')
+      .select('*')
+      .order('name', { ascending: true })
+    if (error) {
+      console.error('Error fetching labels:', error)
+    } else {
+      setLabels(data)
+    }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { fetchLabels() }, [fetchLabels])
+
+  const addLabel = async (name, color) => {
+    const { data, error } = await supabase
+      .from('labels')
+      .insert({ name, color })
+      .select()
+      .single()
+    if (!error) setLabels(prev => [...prev, data])
+    return { data, error }
+  }
+
+  const deleteLabel = async (id) => {
+    const { error } = await supabase.from('labels').delete().eq('id', id)
+    if (!error) setLabels(prev => prev.filter(l => l.id !== id))
+    return { error }
+  }
+
+  return { labels, loading, refetch: fetchLabels, addLabel, deleteLabel }
+}
+
+export async function addLabelToContact(contactId, labelId) {
+  const { error } = await supabase
+    .from('contact_labels')
+    .insert({ contact_id: contactId, label_id: labelId })
+  return { error }
+}
+
+export async function removeLabelFromContact(contactId, labelId) {
+  const { error } = await supabase
+    .from('contact_labels')
+    .delete()
+    .eq('contact_id', contactId)
+    .eq('label_id', labelId)
+  return { error }
 }

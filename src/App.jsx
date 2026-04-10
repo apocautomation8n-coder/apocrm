@@ -6,6 +6,7 @@ import OutboundAgents from './pages/OutboundAgents'
 import Metrics from './pages/Metrics'
 import Contacts from './pages/Contacts'
 import Pipeline from './pages/Pipeline'
+import Tasks from './pages/Tasks'
 import Calendar from './pages/Calendar'
 import Finance from './pages/Finance'
 import Plans from './pages/Plans'
@@ -54,6 +55,7 @@ export default function App() {
       <Route path="/metrics" element={<ProtectedRoute><Metrics /></ProtectedRoute>} />
       <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
       <Route path="/pipeline" element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
+      <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
       <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
       <Route path="/finance" element={<ProtectedRoute><Finance /></ProtectedRoute>} />
       <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />

@@ -8,8 +8,10 @@ import Toggle from '../components/ui/Toggle'
 import Modal from '../components/ui/Modal'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
-import { Search, Plus, Bot, PanelRightOpen, PanelRightClose } from 'lucide-react'
+import { Search, Plus, Bot, PanelRightOpen, PanelRightClose, Tag, Filter } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import LabelManager from '../components/chat/LabelManager'
+import { useLabels } from '../hooks/useMessages'
 
 export default function OutboundAgents() {
   const { agents, loading: agentsLoading, toggleBot, addAgent } = useAgents()
@@ -26,6 +28,9 @@ export default function OutboundAgents() {
   const [newContactEmail, setNewContactEmail] = useState('')
   const { contacts } = useContacts()
   const [contactSearch, setContactSearch] = useState('')
+  const [showLabelManager, setShowLabelManager] = useState(false)
+  const [selectedLabelId, setSelectedLabelId] = useState('all')
+  const { labels } = useLabels()
 
   const activeAgent = selectedAgent || agents[0]
   const { conversations, loading: convsLoading, refetch, toggleContactBot } = useConversations(activeAgent?.id)
@@ -39,12 +44,18 @@ export default function OutboundAgents() {
   })
 
   const filteredConversations = conversations.filter(conv => {
-    if (!search) return true
     const s = search.toLowerCase()
-    return (
+    
+    // Search match
+    const matchesSearch = !search || 
       conv.contact?.name?.toLowerCase().includes(s) ||
       conv.contact?.phone?.includes(s)
-    )
+
+    // Label match
+    const matchesLabel = selectedLabelId === 'all' || 
+      conv.contact?.labels?.some(l => l.id === selectedLabelId)
+
+    return matchesSearch && matchesLabel
   })
 
   const handleAddAgent = async () => {
@@ -189,6 +200,47 @@ export default function OutboundAgents() {
               >
                 <Plus size={18} />
               </button>
+              <button
+                onClick={() => setShowLabelManager(true)}
+                className="p-2 text-surface-400 hover:text-surface-200 bg-surface-800/60 hover:bg-surface-800 rounded-lg transition-all cursor-pointer shrink-0"
+                title="Gestionar etiquetas"
+              >
+                <Tag size={18} />
+              </button>
+            </div>
+
+            {/* Label Filter Bar */}
+            <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1 no-scrollbar">
+              <button
+                onClick={() => setSelectedLabelId('all')}
+                className={`
+                  px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap transition-all border
+                  ${selectedLabelId === 'all' 
+                    ? 'bg-primary-600/20 text-primary-400 border-primary-500/40' 
+                    : 'bg-surface-800/40 text-surface-500 border-surface-700/30 hover:text-surface-300'
+                  }
+                `}
+              >
+                Todos
+              </button>
+              {labels.map(label => (
+                <button
+                  key={label.id}
+                  onClick={() => setSelectedLabelId(prev => prev === label.id ? 'all' : label.id)}
+                  className={`
+                    px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap transition-all border
+                    ${selectedLabelId === label.id 
+                      ? 'border-transparent text-white' 
+                      : 'bg-surface-800/40 text-surface-500 border-surface-700/30 hover:text-surface-300'
+                    }
+                  `}
+                  style={{ 
+                    backgroundColor: selectedLabelId === label.id ? label.color : 'transparent' 
+                  }}
+                >
+                  {label.name}
+                </button>
+              ))}
             </div>
           </div>
           <ConversationList
@@ -333,6 +385,11 @@ export default function OutboundAgents() {
           </div>
         </div>
       </Modal>
+
+      <LabelManager 
+        isOpen={showLabelManager} 
+        onClose={() => setShowLabelManager(false)} 
+      />
     </div>
   )
 }

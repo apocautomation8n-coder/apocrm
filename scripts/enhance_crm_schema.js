@@ -17,7 +17,7 @@ const ALTER_STATEMENTS = [
 ]
 
 const ALL_VIEWS = [
-  '/agents', '/metrics', '/contacts', '/pipeline', '/calendar', '/finance', '/plans', '/converter', '/users'
+  '/agents', '/metrics', '/contacts', '/pipeline', '/tasks', '/calendar', '/followups', '/finance', '/plans', '/converter', '/users'
 ]
 
 async function main() {
