@@ -13,6 +13,7 @@ import toast from 'react-hot-toast'
 const currencies = [
   { code: 'ARS', symbol: '$', label: 'Pesos (ARS)' },
   { code: 'USD', symbol: '$', label: 'Dólares (USD)' },
+  { code: 'USD_ARS', symbol: '$', label: 'Dólares (USD ARS)' },
   { code: 'EUR', symbol: '€', label: 'Euros (EUR)' },
 ]
 
