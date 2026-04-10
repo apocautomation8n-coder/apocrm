@@ -15,21 +15,34 @@ export default function FinanceDashboard() {
   const [expenses, setExpenses] = useState([])
   const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [rates, setRates] = useState({ usd: 0, eur: 0 })
 
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true)
-      const [txRes, planRes, expRes, accRes] = await Promise.all([
-        supabase.from('finance_transactions').select('*').eq('status', 'activo'),
-        supabase.from('monthly_plans').select('*').eq('status', 'activo'),
-        supabase.from('expenses').select('*'),
-        supabase.from('bank_accounts').select('*'),
-      ])
-      setTransactions(txRes.data || [])
-      setPlans(planRes.data || [])
-      setExpenses(expRes.data || [])
-      setAccounts(accRes.data || [])
-      setLoading(false)
+      try {
+        const [txRes, planRes, expRes, accRes, ratesResUsd, ratesResEur] = await Promise.all([
+          supabase.from('finance_transactions').select('*').eq('status', 'activo'),
+          supabase.from('monthly_plans').select('*').eq('status', 'activo'),
+          supabase.from('expenses').select('*'),
+          supabase.from('bank_accounts').select('*'),
+          fetch('https://dolarapi.com/v1/dolares/blue').then(r => r.json()),
+          fetch('https://dolarapi.com/v1/cotizaciones/eur').then(r => r.json()),
+        ])
+        
+        setTransactions(txRes.data || [])
+        setPlans(planRes.data || [])
+        setExpenses(expRes.data || [])
+        setAccounts(accRes.data || [])
+        setRates({
+          usd: ratesResUsd.venta || 0,
+          eur: ratesResEur.venta || 0
+        })
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err)
+      } finally {
+        setLoading(false)
+      }
     }
     fetchAll()
   }, [])
@@ -37,8 +50,14 @@ export default function FinanceDashboard() {
   // Active-only expenses
   const activeExpenses = expenses.filter(e => (e.status || 'activo') === 'activo')
 
-  const dashboard = useMemo(() => {
-    return currencies.map(c => {
+  const { consolidated, groupedData } = useMemo(() => {
+    let totalBrutoArs = 0
+    let totalNetArs = 0
+    let totalPendingArs = 0
+
+    const groups = currencies.map(c => {
+      const rate = c.code === 'USD' ? rates.usd : c.code === 'EUR' ? rates.eur : 1
+
       // ────── FIXED / RECURRING ──────
       const mrr = plans
         .filter(p => (p.currency || 'USD') === c.code)
@@ -74,6 +93,8 @@ export default function FinanceDashboard() {
 
       const onetimeTotalCosts = projectFreelancer + oneTimeExpenses
       const onetimeNetProfit = projectCollected - onetimeTotalCosts
+      
+      const projectPending = projectBudget - projectCollected
 
       // ────── GENERAL ──────
       const cashInAccounts = accounts
@@ -82,14 +103,24 @@ export default function FinanceDashboard() {
 
       const hasData = mrr > 0 || projectBudget > 0 || fixedTotalCosts > 0 || onetimeTotalCosts > 0 || cashInAccounts > 0
 
+      // Consolidated Totals (Accumulate in ARS)
+      totalBrutoArs += (mrr + projectBudget) * rate
+      totalNetArs += (fixedNetProfit + onetimeNetProfit) * rate
+      totalPendingArs += projectPending * rate
+
       return {
         code: c.code, symbol: c.symbol, label: c.label, hasData,
         mrr, planFreelancerCosts, recurringExpenses, fixedTotalCosts, fixedNetProfit,
         projectBudget, projectCollected, projectFreelancer, oneTimeExpenses, onetimeTotalCosts, onetimeNetProfit,
-        cashInAccounts,
+        projectPending, cashInAccounts,
       }
     })
-  }, [transactions, plans, activeExpenses, accounts])
+
+    return { 
+      groupedData: groups,
+      consolidated: { totalBrutoArs, totalNetArs, totalPendingArs }
+    }
+  }, [transactions, plans, activeExpenses, accounts, rates])
 
   if (loading) {
     return (
@@ -107,7 +138,45 @@ export default function FinanceDashboard() {
 
   return (
     <div className="space-y-10 py-2 animate-fade-in">
-      {dashboard.filter(d => d.hasData).map(d => {
+      {/* Consolidated Summary in ARS */}
+      <div className="bg-gradient-to-br from-primary-900/40 to-surface-900 border border-primary-500/20 rounded-2xl p-6 shadow-xl">
+        <div className="flex items-center gap-2 mb-6">
+          <Calculator size={20} className="text-primary-400" />
+          <h2 className="text-lg font-bold text-surface-50">Resumen Consolidado (Pesos ARS)</h2>
+          <span className="ml-auto text-[10px] text-surface-500 font-mono uppercase tracking-widest bg-surface-800 px-2 py-1 rounded border border-surface-700">Cotización Real-Time</span>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-1">
+            <p className="text-xs text-surface-400 font-medium uppercase tracking-wider">Bruto Total</p>
+            <p className="text-3xl font-black text-white whitespace-nowrap overflow-hidden text-ellipsis">
+              <span className="text-xs font-bold text-primary-400 mr-2">ARS</span>
+              ${fmt(consolidated.totalBrutoArs)}
+            </p>
+            <p className="text-[10px] text-surface-500 font-medium">Proyectos + Mensualidades</p>
+          </div>
+          
+          <div className="space-y-1">
+            <p className="text-xs text-surface-400 font-medium uppercase tracking-wider">Pendiente a Cobrar</p>
+            <p className="text-3xl font-black text-amber-400 whitespace-nowrap overflow-hidden text-ellipsis">
+              <span className="text-xs font-bold text-amber-500/60 mr-2">ARS</span>
+              ${fmt(consolidated.totalPendingArs)}
+            </p>
+            <p className="text-[10px] text-surface-500 font-medium">Faltante de proyectos activos</p>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-xs text-surface-400 font-medium uppercase tracking-wider">Ganancia Neta Consolidada</p>
+            <p className={`text-3xl font-black whitespace-nowrap overflow-hidden text-ellipsis ${consolidated.totalNetArs >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <span className="text-xs font-bold opacity-60 mr-2">ARS</span>
+              ${fmt(consolidated.totalNetArs)}
+            </p>
+            <p className="text-[10px] text-surface-500 font-medium">Ingresos - Gastos - Freelancers</p>
+          </div>
+        </div>
+      </div>
+
+      {groupedData.filter(d => d.hasData).map(d => {
         const fixedMargin = d.mrr > 0 ? ((d.fixedNetProfit / d.mrr) * 100).toFixed(0) : 0
         const onetimeMargin = d.projectCollected > 0 ? ((d.onetimeNetProfit / d.projectCollected) * 100).toFixed(0) : 0
 
@@ -208,7 +277,7 @@ export default function FinanceDashboard() {
                     </p>
                     {d.projectBudget > d.projectCollected && (
                       <p className="text-[10px] text-surface-500 mt-0.5">
-                        Presupuestado: {d.symbol}{fmt(d.projectBudget)}
+                        Pendiente: {d.symbol}{fmt(d.projectPending)}
                       </p>
                     )}
                   </div>
@@ -258,3 +327,4 @@ export default function FinanceDashboard() {
     </div>
   )
 }
+

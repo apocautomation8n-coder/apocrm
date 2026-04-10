@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { DollarSign, CreditCard, TrendingDown, BarChart3, Wallet } from 'lucide-react'
+import { DollarSign, CreditCard, TrendingDown, BarChart3, Wallet, Calculator } from 'lucide-react'
 import FinanceDashboard from './FinanceDashboard'
 import FinanceProjects from './FinanceProjects'
 import Plans from './Plans'
 import FinanceExpenses from './FinanceExpenses'
 import FinanceCash from './FinanceCash'
+import CurrencyConverter from './CurrencyConverter'
 
 export default function Finance() {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -15,6 +16,7 @@ export default function Finance() {
     { id: 'projects', label: 'Proyectos', icon: DollarSign },
     { id: 'plans', label: 'Mensualidades', icon: CreditCard },
     { id: 'expenses', label: 'Egresos', icon: TrendingDown },
+    { id: 'converter', label: 'Conversión', icon: Calculator },
   ]
 
   return (
@@ -57,6 +59,7 @@ export default function Finance() {
         {activeTab === 'projects' && <FinanceProjects hideHeader={true} />}
         {activeTab === 'plans' && <Plans hideHeader={true} />}
         {activeTab === 'expenses' && <FinanceExpenses hideHeader={true} />}
+        {activeTab === 'converter' && <CurrencyConverter hideHeader={true} />}
       </div>
     </div>
   )

@@ -5,7 +5,7 @@ import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import toast from 'react-hot-toast'
 
-export default function CurrencyConverter() {
+export default function CurrencyConverter({ hideHeader = false }) {
   const [rates, setRates] = useState({
     usdBlue: { compra: 0, venta: 0, fecha: null },
     eur: { compra: 0, venta: 0, fecha: null }
@@ -90,8 +90,9 @@ export default function CurrencyConverter() {
   }
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in max-w-5xl mx-auto">
+    <div className={`space-y-6 animate-fade-in max-w-5xl mx-auto ${!hideHeader ? 'p-6' : 'py-2'}`}>
       {/* Header */}
+      {!hideHeader && (
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-surface-100 flex items-center gap-3">
@@ -105,6 +106,7 @@ export default function CurrencyConverter() {
           {loading ? 'Actualizando...' : 'Actualizar cotizaciones'}
         </Button>
       </div>
+      )}
 
       {/* Market Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

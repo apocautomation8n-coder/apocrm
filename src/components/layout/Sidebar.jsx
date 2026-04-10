@@ -27,7 +27,6 @@ const navItems = [
   { to: '/tasks',     icon: CheckSquare,   label: 'Tareas', badgeKey: 'tasks' },
   { to: '/calendar',  icon: CalendarDays,  label: 'Calendario' },
   { to: '/finance',   icon: DollarSign,    label: 'Finanzas' },
-  { to: '/converter', icon: Calculator,    label: 'Conversión de Capital' },
   { to: '/users',     icon: Zap,           label: 'Usuarios' },
 ]
 
