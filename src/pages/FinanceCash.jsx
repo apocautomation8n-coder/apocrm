@@ -9,7 +9,7 @@ import toast from 'react-hot-toast'
 
 const currencies = [
   { code: 'ARS', symbol: '$', label: 'Pesos (ARS)' },
-  { code: 'USD', symbol: '$', label: 'Dólares Blue (USD)' },
+  { code: 'USD', symbol: '$', label: 'Dólares (USD)' },
   { code: 'USD_ARS', symbol: '$', label: 'Dólares (USD ARS)' },
   { code: 'EUR', symbol: '€', label: 'Euros (EUR)' },
 ]
@@ -30,6 +30,9 @@ export default function FinanceCash({ hideHeader = false }) {
     card_type: 'Débito',
     cbu: '',
     alias: '',
+    ach: '',
+    wire: '',
+    iban: '',
     notes: '',
   })
 
@@ -59,6 +62,9 @@ export default function FinanceCash({ hideHeader = false }) {
       card_type: form.card_type || null,
       cbu: form.cbu || null,
       alias: form.alias || null,
+      ach: form.ach || null,
+      wire: form.wire || null,
+      iban: form.iban || null,
       notes: form.notes || null,
     }
 
@@ -96,6 +102,9 @@ export default function FinanceCash({ hideHeader = false }) {
       card_type: 'Débito',
       cbu: '',
       alias: '',
+      ach: '',
+      wire: '',
+      iban: '',
       notes: '' 
     })
     setShowModal(true)
@@ -113,6 +122,9 @@ export default function FinanceCash({ hideHeader = false }) {
       card_type: a.card_type || 'Débito',
       cbu: a.cbu || '',
       alias: a.alias || '',
+      ach: a.ach || '',
+      wire: a.wire || '',
+      iban: a.iban || '',
       notes: a.notes || '',
     })
     setShowModal(true)
@@ -175,7 +187,7 @@ export default function FinanceCash({ hideHeader = false }) {
               {/* Account cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {group.accounts.map(account => (
-                  <div key={account.id} className="bg-surface-900/80 border border-surface-800/60 rounded-2xl p-5 hover:border-surface-700/60 transition-all group relative overflow-hidden">
+                  <div key={account.id} className="bg-surface-900/80 border border-surface-800/60 rounded-2xl p-5 hover:border-surface-700/60 transition-all group relative overflow-hidden flex flex-col min-h-[220px]">
                     {/* Background decoration */}
                     <Building2 className="absolute -right-4 -bottom-4 w-24 h-24 text-surface-800/30 -rotate-12 pointer-events-none" />
                     
@@ -220,18 +232,44 @@ export default function FinanceCash({ hideHeader = false }) {
                     </div>
 
                     {/* Banking identifiers */}
-                    {account.cbu && (
-                      <div className="mb-3 relative z-10">
-                        <p className="text-[10px] text-surface-500 uppercase font-bold tracking-widest mb-1 ml-1">CBU / CVU</p>
-                        <div className="px-3 py-1.5 rounded-lg bg-surface-950/50 border border-surface-800/60 font-mono text-[11px] text-surface-400 select-all">
-                          {account.cbu}
+                    <div className="mb-3 relative z-10 space-y-2">
+                       {account.cbu && (
+                        <div>
+                          <p className="text-[9px] text-surface-500 uppercase font-bold tracking-widest mb-0.5 ml-1">CBU / CVU</p>
+                          <div className="px-2 py-1 rounded-lg bg-surface-950/50 border border-surface-800/60 font-mono text-[10px] text-surface-400 select-all truncate">
+                            {account.cbu}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                       )}
+                       {account.ach && (
+                        <div>
+                          <p className="text-[9px] text-surface-500 uppercase font-bold tracking-widest mb-0.5 ml-1">ACH</p>
+                          <div className="px-2 py-1 rounded-lg bg-surface-950/50 border border-surface-800/60 font-mono text-[10px] text-surface-400 select-all truncate">
+                            {account.ach}
+                          </div>
+                        </div>
+                       )}
+                       {account.wire && (
+                        <div>
+                          <p className="text-[9px] text-surface-500 uppercase font-bold tracking-widest mb-0.5 ml-1">WIRE</p>
+                          <div className="px-2 py-1 rounded-lg bg-surface-950/50 border border-surface-800/60 font-mono text-[10px] text-surface-400 select-all truncate">
+                            {account.wire}
+                          </div>
+                        </div>
+                       )}
+                       {account.iban && (
+                        <div>
+                          <p className="text-[9px] text-surface-500 uppercase font-bold tracking-widest mb-0.5 ml-1">IBAN</p>
+                          <div className="px-2 py-1 rounded-lg bg-surface-950/50 border border-surface-800/60 font-mono text-[10px] text-surface-400 select-all truncate">
+                            {account.iban}
+                          </div>
+                        </div>
+                       )}
+                    </div>
 
                     {/* Card info */}
                     {account.card_number && (
-                      <div className="relative z-10 mt-auto">
+                      <div className="relative z-10 mt-auto pt-2">
                         <div className="p-3 rounded-xl bg-gradient-to-br from-surface-800 to-surface-900 border border-surface-700/50 shadow-lg group-hover:border-primary-500/30 transition-all">
                           <div className="flex justify-between items-start mb-2">
                             <CreditCard size={14} className="text-surface-400" />
@@ -264,7 +302,7 @@ export default function FinanceCash({ hideHeader = false }) {
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Editar Cuenta' : 'Agregar Cuenta'}>
         <div className="space-y-6 px-1">
           <section className="space-y-4 px-1">
-            <Input label="Nombre de la cuenta" value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: Banco Galicia, Mercado Pago, Binance..." />
+            <Input label="Nombre de la cuenta" value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: Banco Galicia, Mercado Pago, Wise..." />
             <div className="grid grid-cols-2 gap-4">
               <Select label="Moneda" value={form.currency} onChange={(e) => setForm(f => ({ ...f, currency: e.target.value }))}>
                 {currencies.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
@@ -276,27 +314,47 @@ export default function FinanceCash({ hideHeader = false }) {
           <section className="p-5 rounded-2xl bg-surface-800/40 border border-surface-700/50 space-y-4 shadow-inner">
             <p className="text-[10px] font-bold text-surface-500 uppercase tracking-[0.2em] flex items-center gap-2">
               <Building2 size={13} className="text-primary-500" />
-              Identificadores Bancarios
+              Identificadores de Cuenta
             </p>
             <div className="grid grid-cols-1 gap-4">
-              <Input label="CBU / CVU" value={form.cbu} onChange={(e) => setForm(f => ({ ...f, cbu: e.target.value }))} placeholder="22 dígitos..." />
-              <Input label="Alias" value={form.alias} onChange={(e) => setForm(f => ({ ...f, alias: e.target.value }))} placeholder="mi.alias.banco" />
+              {/* Dynamic identifier based on currency */}
+              {(form.currency === 'ARS' || form.currency === 'USD_ARS') && (
+                <>
+                  <Input label="CBU / CVU" value={form.cbu} onChange={(e) => setForm(f => ({ ...f, cbu: e.target.value }))} placeholder="22 dígitos..." />
+                  <Input label="Alias" value={form.alias} onChange={(e) => setForm(f => ({ ...f, alias: e.target.value }))} placeholder="mi.alias.banco" />
+                </>
+              )}
+              {form.currency === 'USD' && (
+                <>
+                  <Input label="ACH Number" value={form.ach} onChange={(e) => setForm(f => ({ ...f, ach: e.target.value }))} placeholder="Routing/Account..." />
+                  <Input label="WIRE / Swift" value={form.wire} onChange={(e) => setForm(f => ({ ...f, wire: e.target.value }))} placeholder="SWIFT/BIC..." />
+                </>
+              )}
+              {form.currency === 'EUR' && (
+                <Input label="IBAN" value={form.iban} onChange={(e) => setForm(f => ({ ...f, iban: e.target.value }))} placeholder="ESXX XXXX ..." />
+              )}
+              {/* Fallback to Alias for other currencies if needed */}
+              {form.currency !== 'ARS' && form.currency !== 'USD_ARS' && form.currency !== 'USD' && form.currency !== 'EUR' && (
+                 <Input label="Alias / CBU" value={form.alias} onChange={(e) => setForm(f => ({ ...f, alias: e.target.value }))} placeholder="Identificador..." />
+              )}
             </div>
           </section>
           
           <section className="p-5 rounded-2xl bg-surface-800/40 border border-surface-700/50 space-y-4 shadow-inner">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold text-surface-500 uppercase tracking-[0.2em] flex items-center gap-2">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-[10px] font-bold text-surface-500 uppercase tracking-[0.2em] flex items-center gap-2 shrink-0">
                 <CreditCard size={13} className="text-emerald-500" />
                 Datos de Tarjeta
               </p>
-              <Select className="!w-fit text-[10px] h-7 bg-surface-900" value={form.card_type} onChange={(e) => setForm(f => ({ ...f, card_type: e.target.value }))}>
-                <option value="Débito">Débito</option>
-                <option value="Crédito Visa">Crédito Visa</option>
-                <option value="Crédito Master">Crédito Master</option>
-                <option value="Crédito Amex">Crédito Amex</option>
-                <option value="Prepaga">Prepaga</option>
-              </Select>
+              <div className="flex-1 min-w-[120px]">
+                <Select className="!w-full text-[10px] h-8 bg-surface-900" value={form.card_type} onChange={(e) => setForm(f => ({ ...f, card_type: e.target.value }))}>
+                  <option value="Débito">Débito</option>
+                  <option value="Crédito Visa">Crédito Visa</option>
+                  <option value="Crédito Master">Crédito Master</option>
+                  <option value="Crédito Amex">Crédito Amex</option>
+                  <option value="Prepaga">Prepaga</option>
+                </Select>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 gap-4">

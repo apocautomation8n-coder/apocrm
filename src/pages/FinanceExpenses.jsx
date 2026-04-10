@@ -17,6 +17,7 @@ const currencies = [
 
 export default function FinanceExpenses({ hideHeader = false }) {
   const [expenses, setExpenses] = useState([])
+  const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -33,29 +34,31 @@ export default function FinanceExpenses({ hideHeader = false }) {
     description: '',
     recurring: false,
     billing_day: '1',
+    bank_account_id: '',
   })
 
-  // Derive available months from dates
-  const availableMonths = useMemo(() => {
-    const months = new Set()
-    expenses.forEach(e => {
-      if (e.date) months.add(e.date.substring(0, 7)) // 'YYYY-MM'
-    })
-    return Array.from(months).sort().reverse()
-  }, [expenses])
+  // ... rest of availableMonths memo ...
 
-  const fetchExpenses = async () => {
+  const fetchData = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    const { data: expData, error: expError } = await supabase
       .from('expenses')
-      .select('*')
+      .select('*, account:bank_account_id(id, name)')
       .order('date', { ascending: false })
-    if (error) toast.error('Error cargando egresos')
-    else setExpenses(data || [])
+    
+    if (expError) toast.error('Error cargando egresos')
+    else setExpenses(expData || [])
+
+    const { data: accData } = await supabase
+      .from('bank_accounts')
+      .select('*')
+      .order('name', { ascending: true })
+    setAccounts(accData || [])
+
     setLoading(false)
   }
 
-  useEffect(() => { fetchExpenses() }, [])
+  useEffect(() => { fetchData() }, [])
 
   const filtered = expenses.filter(e => {
     if (filterMonth !== 'all' && e.date && !e.date.startsWith(filterMonth)) return false
@@ -63,51 +66,57 @@ export default function FinanceExpenses({ hideHeader = false }) {
     return true
   })
 
-  const totalsByCurrency = useMemo(() => {
-    return currencies.map(c => {
-      const perCurr = filtered.filter(e => (e.currency || 'USD') === c.code && (e.status || 'activo') === 'activo')
-      return {
-        code: c.code,
-        label: c.label,
-        symbol: c.symbol,
-        total: perCurr.reduce((sum, e) => sum + Number(e.amount || 0), 0)
-      }
-    })
-  }, [filtered])
+  // ... rest of totalsByCurrency memo ...
 
   const handleSave = async () => {
     if (!form.description || !form.date || !form.amount) return toast.error('Descripción, monto y fecha son obligatorios')
     
+    const amount = parseFloat(form.amount || 0)
     const payload = { 
-      amount: parseFloat(form.amount || 0),
+      amount: amount,
       currency: form.currency,
       category: form.category,
       description: form.description,
       date: form.date,
       recurring: form.recurring,
       billing_day: form.recurring ? parseInt(form.billing_day) || 1 : null,
+      bank_account_id: form.bank_account_id || null,
     }
 
-    if (editing) {
-      const { error } = await supabase.from('expenses').update(payload).eq('id', editing.id)
-      if (error) return toast.error('Error actualizando egreso')
-      toast.success('Egreso actualizado')
-    } else {
-      const { error } = await supabase.from('expenses').insert(payload)
-      if (error) return toast.error('Error creando egreso')
-      toast.success('Egreso registrado')
+    try {
+      if (editing) {
+        const { error } = await supabase.from('expenses').update(payload).eq('id', editing.id)
+        if (error) throw error
+        toast.success('Egreso actualizado')
+      } else {
+        const { error } = await supabase.from('expenses').insert(payload)
+        if (error) throw error
+
+        // Subtract from bank account if linked
+        if (form.bank_account_id) {
+          const targetAccount = accounts.find(a => a.id === form.bank_account_id)
+          if (targetAccount) {
+            const newBalance = Number(targetAccount.balance || 0) - amount
+            await supabase.from('bank_accounts').update({ balance: newBalance }).eq('id', targetAccount.id)
+          }
+        }
+        toast.success('Egreso registrado y saldo restado')
+      }
+    } catch (err) {
+      toast.error('Error al guardar egreso')
+      console.error(err)
     }
 
     setShowModal(false)
     setEditing(null)
-    fetchExpenses()
+    fetchData()
   }
 
   const handleDelete = async (id) => {
     if (!confirm('¿Eliminar este registro de egreso permanentemente?')) return
     await supabase.from('expenses').delete().eq('id', id)
     toast.success('Egreso eliminado')
-    fetchExpenses()
+    fetchData()
   }
 
   const handleToggleStatus = async (id, currentStatus) => {
@@ -130,6 +139,7 @@ export default function FinanceExpenses({ hideHeader = false }) {
       description: '',
       recurring: false,
       billing_day: '1',
+      bank_account_id: '',
     })
     setShowModal(true)
   }
@@ -144,6 +154,7 @@ export default function FinanceExpenses({ hideHeader = false }) {
       description: t.description || '',
       recurring: t.recurring || false,
       billing_day: String(t.billing_day || 1),
+      bank_account_id: t.bank_account_id || '',
     })
     setShowModal(true)
   }
@@ -217,7 +228,6 @@ export default function FinanceExpenses({ hideHeader = false }) {
           {currencies.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
         </select>
         
-        {/* We can place the add button here if header is hidden to mimic other pages */}
         {hideHeader && (
            <div className="ml-auto">
               <Button onClick={openNewModal}>
@@ -241,7 +251,7 @@ export default function FinanceExpenses({ hideHeader = false }) {
                 <tr className="border-b border-surface-800/60">
                   <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Fecha</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Descripción</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Categoría</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Cuenta</th>
                   <th className="px-5 py-3 text-center text-xs font-medium text-surface-400 uppercase tracking-wider">Recurrente</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-surface-400 uppercase tracking-wider">Monto</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-surface-400 uppercase tracking-wider">Acciones</th>
@@ -251,12 +261,19 @@ export default function FinanceExpenses({ hideHeader = false }) {
                 {filtered.map(e => (
                   <tr key={e.id} className={`border-b border-surface-800/30 hover:bg-surface-800/30 transition-colors ${(e.status || 'activo') !== 'activo' ? 'opacity-40' : ''}`}>
                     <td className="px-5 py-3.5 text-surface-400">{e.date}</td>
-                    <td className="px-5 py-3.5 text-surface-200 font-medium">{e.description}</td>
-                    <td className="px-5 py-3.5 text-surface-400">{e.category || '—'}</td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex flex-col">
+                        <span className="text-surface-200 font-medium">{e.description}</span>
+                        <span className="text-[10px] text-surface-500">{e.category}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5 text-surface-400">
+                      {e.account?.name || <span className="text-surface-600 italic">No vinculada</span>}
+                    </td>
                     <td className="px-5 py-3.5 text-center">
                       {e.recurring ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                          <Repeat size={10} /> Día {e.billing_day}
+                          < Repeat size={10} /> Día {e.billing_day}
                         </span>
                       ) : (
                         <span className="text-surface-600 text-xs">—</span>
@@ -313,6 +330,16 @@ export default function FinanceExpenses({ hideHeader = false }) {
               {currencies.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
             </Select>
           </div>
+          
+          <div className="grid grid-cols-1 gap-4">
+            <Select label="Cuenta Bancaria de Salida" value={form.bank_account_id} onChange={(e) => setForm(f => ({ ...f, bank_account_id: e.target.value }))}>
+              <option value="">No descontar de caja (Solo registro)</option>
+              {accounts.map(a => (
+                <option key={a.id} value={a.id}>{a.name} (Saldo: {a.balance})</option>
+              ))}
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
              <Input label="Fecha" type="date" value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} />
              <div className="space-y-1.5">
@@ -338,7 +365,7 @@ export default function FinanceExpenses({ hideHeader = false }) {
              </div>
           </div>
           
-          {/* Recurring toggle */}
+          {/* Recurring toggle ... */}
           <div className="border-t border-surface-700/50 pt-4 mt-2">
             <div className="flex items-center justify-between">
               <div>

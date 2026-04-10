@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { DollarSign, CreditCard, TrendingDown, BarChart3, Wallet, Calculator } from 'lucide-react'
+import { DollarSign, CreditCard, TrendingDown, BarChart3, Wallet, Calculator, TrendingUp } from 'lucide-react'
 import FinanceDashboard from './FinanceDashboard'
 import FinanceProjects from './FinanceProjects'
+import FinanceIncomes from './FinanceIncomes'
 import Plans from './Plans'
 import FinanceExpenses from './FinanceExpenses'
 import FinanceCash from './FinanceCash'
@@ -13,6 +14,7 @@ export default function Finance() {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'cash', label: 'Caja', icon: Wallet },
+    { id: 'incomes', label: 'Ingresos', icon: TrendingUp },
     { id: 'projects', label: 'Proyectos', icon: DollarSign },
     { id: 'plans', label: 'Mensualidades', icon: CreditCard },
     { id: 'expenses', label: 'Egresos', icon: TrendingDown },
@@ -56,6 +58,7 @@ export default function Finance() {
       <div className="animate-fade-in">
         {activeTab === 'dashboard' && <FinanceDashboard />}
         {activeTab === 'cash' && <FinanceCash hideHeader={true} />}
+        {activeTab === 'incomes' && <FinanceIncomes hideHeader={true} />}
         {activeTab === 'projects' && <FinanceProjects hideHeader={true} />}
         {activeTab === 'plans' && <Plans hideHeader={true} />}
         {activeTab === 'expenses' && <FinanceExpenses hideHeader={true} />}
