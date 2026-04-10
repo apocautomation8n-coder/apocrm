@@ -15,7 +15,7 @@ import {
 import Button from '../components/ui/Button'
 import toast from 'react-hot-toast'
 
-export default function FollowUps() {
+export default function FollowUps({ hideHeader = false }) {
   const [followUps, setFollowUps] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('pending') // pending, followed_up, responded, canceled
@@ -110,7 +110,8 @@ export default function FollowUps() {
   }
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
+    <div className={`space-y-6 animate-fade-in ${!hideHeader ? 'p-6' : 'py-2'}`}>
+      {!hideHeader && (
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-surface-100 flex items-center gap-3">
@@ -124,6 +125,7 @@ export default function FollowUps() {
           Actualizar
         </Button>
       </div>
+      )}
 
       {/* Tabs / Filters */}
       <div className="flex gap-2 bg-surface-900/50 p-1 rounded-xl w-max border border-surface-800/60">

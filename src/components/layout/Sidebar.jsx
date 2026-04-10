@@ -26,7 +26,6 @@ const navItems = [
   { to: '/pipeline',  icon: Kanban,        label: 'Pipeline' },
   { to: '/tasks',     icon: CheckSquare,   label: 'Tareas', badgeKey: 'tasks' },
   { to: '/calendar',  icon: CalendarDays,  label: 'Calendario' },
-  { to: '/followups', icon: History,       label: 'Seguimientos' },
   { to: '/finance',   icon: DollarSign,    label: 'Finanzas' },
   { to: '/converter', icon: Calculator,    label: 'Conversión de Capital' },
   { to: '/users',     icon: Zap,           label: 'Usuarios' },
