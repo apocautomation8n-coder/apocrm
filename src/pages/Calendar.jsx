@@ -13,15 +13,18 @@ import {
   isToday,
   addHours,
   subHours,
+  parseISO,
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { supabase } from '../lib/supabaseClient'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, Trash2, Pencil, Globe, Video, ExternalLink, ArrowRightLeft, User, Check, Search } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, Trash2, Pencil, Globe, Video, ExternalLink, ArrowRightLeft, User, Check, Search, CheckSquare } from 'lucide-react'
 import Select from '../components/ui/Select'
 import toast from 'react-hot-toast'
+import { useTasks } from '../hooks/useTasks'
+import TaskModal from '../components/tasks/TaskModal'
 
 export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -29,9 +32,14 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(null)
   const [showEventModal, setShowEventModal] = useState(false)
   const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ title: '', date: '', start_time: '', end_time: '', description: '', guests: [], meet_link: '' })
+  const [form, setForm] = useState({ title: '', date: '', start_time: '', end_time: '', description: '', guests: [], meet_link: '', recurrence: 'none' })
   const [guestInput, setGuestInput] = useState('')
   const [isGeneratingMeet, setIsGeneratingMeet] = useState(false)
+  
+  // Tasks integration
+  const { tasks, addTask, updateTask } = useTasks('all')
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
+  const [editingTask, setEditingTask] = useState(null)
   
   // Contacts integration
   const [contacts, setContacts] = useState([])
@@ -87,7 +95,32 @@ export default function Calendar() {
 
   const getEventsForDay = (date) => {
     const dateStr = format(date, 'yyyy-MM-dd')
-    return events.filter(e => e.date === dateStr)
+    const dayEvents = events.filter(e => {
+      if (e.date === dateStr) return true
+      if (e.recurrence === 'monthly' && e.date) {
+        const evtDate = parseISO(e.date)
+        return evtDate.getDate() === date.getDate() && date >= evtDate
+      }
+      return false
+    })
+
+    const dayTasks = tasks.filter(t => t.due_date === dateStr).map(t => ({
+      ...t,
+      isTask: true,
+      title: t.title,
+    }))
+
+    return [...dayEvents, ...dayTasks]
+  }
+
+  const handleSaveTask = async (taskData) => {
+    if (editingTask) {
+      await updateTask(editingTask.id, taskData)
+    } else {
+      await addTask(taskData)
+    }
+    setEditingTask(null)
+    setIsTaskModalOpen(false)
   }
 
   const handleSave = async () => {
@@ -101,6 +134,7 @@ export default function Calendar() {
       end_time: form.end_time || null,
       description: form.description || null,
       guests: guestsString || null,
+      recurrence: form.recurrence || 'none',
     }
 
     if (editing) {
@@ -187,7 +221,7 @@ export default function Calendar() {
     setEditing(null)
     setForm({
       title: '', date: format(date || new Date(), 'yyyy-MM-dd'),
-      start_time: '', end_time: '', description: '', guests: [],
+      start_time: '', end_time: '', description: '', guests: [], recurrence: 'none'
     })
     setGuestInput('')
     setShowEventModal(true)
@@ -204,6 +238,7 @@ export default function Calendar() {
       description: event.description || '',
       guests: guestsArray,
       meet_link: event.meet_link || '',
+      recurrence: event.recurrence || 'none'
     })
     setGuestInput('')
     setShowEventModal(true)
@@ -314,18 +349,29 @@ export default function Calendar() {
                   {format(day, 'd')}
                 </span>
                 <div className="mt-1 space-y-0.5">
-                  {dayEvents.slice(0, 2).map(evt => (
+                  {dayEvents.slice(0, 3).map(evt => (
                     <div
                       key={evt.id}
-                      className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary-500/20 text-primary-300 truncate"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (evt.isTask) {
+                          setEditingTask(evt);
+                          setIsTaskModalOpen(true);
+                        } else {
+                          openEditEvent(evt);
+                        }
+                      }}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-medium truncate flex items-center gap-1
+                        ${evt.isTask ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-primary-500/20 text-primary-300'}`}
                       title={evt.title}
                     >
-                      {evt.start_time && <span className="mr-1">{evt.start_time}</span>}
+                      {evt.isTask && <CheckSquare size={10} />}
+                      {evt.start_time && !evt.isTask && <span className="mr-1">{evt.start_time}</span>}
                       {evt.title}
                     </div>
                   ))}
-                  {dayEvents.length > 2 && (
-                    <span className="text-[10px] text-surface-500 px-1.5">+{dayEvents.length - 2} más</span>
+                  {dayEvents.length > 3 && (
+                    <span className="text-[10px] text-surface-500 px-1.5">+{dayEvents.length - 3} más</span>
                   )}
                 </div>
               </button>
@@ -543,6 +589,16 @@ export default function Calendar() {
             <Input label="Hora inicio (ARG)" type="time" value={form.start_time} onChange={(e) => setForm(f => ({ ...f, start_time: e.target.value }))} />
             <Input label="Hora fin (ARG)" type="time" value={form.end_time} onChange={(e) => setForm(f => ({ ...f, end_time: e.target.value }))} />
           </div>
+
+          <Select 
+            label="Repetir" 
+            value={form.recurrence || 'none'}
+            onChange={(e) => setForm(f => ({ ...f, recurrence: e.target.value }))}
+          >
+            <option value="none">No repetir</option>
+            <option value="monthly">Todos los meses</option>
+          </Select>
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-surface-300 font-bold uppercase tracking-wider">Invitados</label>
