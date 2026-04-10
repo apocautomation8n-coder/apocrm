@@ -5,7 +5,7 @@ import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
-import { TrendingDown, Plus, Pencil, Trash2, Filter } from 'lucide-react'
+import { TrendingDown, Plus, Pencil, Trash2, Filter, Repeat } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 
@@ -31,6 +31,8 @@ export default function FinanceExpenses({ hideHeader = false }) {
     currency: 'USD',
     category: '',
     description: '',
+    recurring: false,
+    billing_day: '1',
   })
 
   // Derive available months from dates
@@ -81,7 +83,9 @@ export default function FinanceExpenses({ hideHeader = false }) {
       currency: form.currency,
       category: form.category,
       description: form.description,
-      date: form.date
+      date: form.date,
+      recurring: form.recurring,
+      billing_day: form.recurring ? parseInt(form.billing_day) || 1 : null,
     }
 
     if (editing) {
@@ -114,6 +118,8 @@ export default function FinanceExpenses({ hideHeader = false }) {
       currency: 'USD',
       category: '',
       description: '',
+      recurring: false,
+      billing_day: '1',
     })
     setShowModal(true)
   }
@@ -126,6 +132,8 @@ export default function FinanceExpenses({ hideHeader = false }) {
       currency: t.currency || 'USD',
       category: t.category || '',
       description: t.description || '',
+      recurring: t.recurring || false,
+      billing_day: String(t.billing_day || 1),
     })
     setShowModal(true)
   }
@@ -224,6 +232,7 @@ export default function FinanceExpenses({ hideHeader = false }) {
                   <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Fecha</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Descripción</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Categoría</th>
+                  <th className="px-5 py-3 text-center text-xs font-medium text-surface-400 uppercase tracking-wider">Recurrente</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-surface-400 uppercase tracking-wider">Monto</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-surface-400 uppercase tracking-wider">Acciones</th>
                 </tr>
@@ -234,6 +243,15 @@ export default function FinanceExpenses({ hideHeader = false }) {
                     <td className="px-5 py-3.5 text-surface-400">{e.date}</td>
                     <td className="px-5 py-3.5 text-surface-200 font-medium">{e.description}</td>
                     <td className="px-5 py-3.5 text-surface-400">{e.category || '—'}</td>
+                    <td className="px-5 py-3.5 text-center">
+                      {e.recurring ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <Repeat size={10} /> Día {e.billing_day}
+                        </span>
+                      ) : (
+                        <span className="text-surface-600 text-xs">—</span>
+                      )}
+                    </td>
                     <td className="px-5 py-3.5 text-right font-bold text-red-400">
                       <div className="flex items-center justify-end gap-1">
                         <span className="text-[10px] opacity-70 font-bold">{e.currency || 'USD'}</span>
@@ -299,6 +317,35 @@ export default function FinanceExpenses({ hideHeader = false }) {
              </div>
           </div>
           
+          {/* Recurring toggle */}
+          <div className="border-t border-surface-700/50 pt-4 mt-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium text-surface-300 flex items-center gap-2">
+                  <Repeat size={14} className="text-amber-400" />
+                  Cobro mensual recurrente
+                </label>
+                <p className="text-[11px] text-surface-500 mt-0.5">Se mostrará en el calendario cada mes</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForm(f => ({ ...f, recurring: !f.recurring }))}
+                className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
+                  form.recurring ? 'bg-amber-500' : 'bg-surface-700'
+                }`}
+              >
+                <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                  form.recurring ? 'translate-x-5' : 'translate-x-0'
+                }`} />
+              </button>
+            </div>
+            {form.recurring && (
+              <div className="mt-3">
+                <Input label="Día del mes" type="number" min="1" max="31" value={form.billing_day} onChange={(e) => setForm(f => ({ ...f, billing_day: e.target.value }))} />
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end gap-2 pt-4 border-t border-surface-700/50">
             <Button variant="secondary" onClick={() => setShowModal(false)}>Cancelar</Button>
             <Button onClick={handleSave}>{editing ? 'Guardar' : 'Crear'}</Button>
