@@ -71,6 +71,31 @@ router.post('/inbound', async (req, res) => {
   }
 })
 
+// GET /api/messages/inbound — Alternative for n8n cuando falla el nodo JSON
+router.get('/inbound', async (req, res) => {
+  try {
+    const { name, phone, timestamp, message, agent_slug } = req.query
+    const normalizedPhone = normalizePhone(phone)
+    if (!normalizedPhone || !agent_slug) return sendError(res, 'phone and agent_slug are required', 400)
+    
+    // Upsert contact
+    const { data: contact, error: cErr } = await supabase.from('contacts').upsert({ phone: normalizedPhone, name: name || null }, { onConflict: 'phone' }).select('id').single()
+    if (cErr) throw cErr
+
+    // Find agent
+    const { data: agent, error: aErr } = await supabase.from('agents').select('id').eq('slug', agent_slug).single()
+    if (aErr) throw aErr
+    
+    // Insert message
+    await supabase.from('messages').insert({
+      agent_id: agent.id, contact_id: contact.id, direction: 'inbound',
+      content: message || '', media_type: 'text', timestamp: timestamp || new Date().toISOString(), is_read: false,
+    })
+    
+    return sendSuccess(res)
+  } catch (err) { return sendError(res, err) }
+})
+
 // POST /api/messages/bot-outbound — receive outbound bot message from n8n to log it into CRM
 router.post('/bot-outbound', async (req, res) => {
   try {

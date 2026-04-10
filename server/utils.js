@@ -28,34 +28,45 @@ export function laxParse(rawBody) {
   if (!rawBody) return {};
   if (typeof rawBody === 'object') return rawBody;
 
+  const result = {};
+
+  // 1. Try standard JSON parse
   try {
-    return JSON.parse(rawBody);
+    const parsed = JSON.parse(rawBody);
+    if (parsed && typeof parsed === 'object') return parsed;
   } catch (err) {
-    console.warn('LaxParse: Standard JSON.parse failed, attempting regex recovery...', err.message);
-    
-    const result = {};
-    
-    // Regex patterns for key fields
-    const phoneMatch = rawBody.match(/"phone"\s*:\s*"(\+?[\d\s-]+)"/);
-    const slugMatch = rawBody.match(/"agent_slug"\s*:\s*"([^"]+)"/);
-    const nameMatch = rawBody.match(/"name"\s*:\s*"([^"]+)"/);
-    
-    // Message is trickier because it contains the garbage
-    // We try to find "message": " and everything until the end, ignoring the last " and }
-    const messageMatch = rawBody.match(/"message"\s*:\s*"([\s\S]*)"\s*}/) || 
-                         rawBody.match(/"message"\s*:\s*"([\s\S]*)"/);
-
-    if (phoneMatch) result.phone = phoneMatch[1].trim();
-    if (slugMatch) result.agent_slug = slugMatch[1].trim();
-    if (nameMatch) result.name = nameMatch[1].trim();
-    if (messageMatch) {
-      // Clean up trailing garbage if regex was too greedy
-      let msg = messageMatch[1];
-      result.message = msg;
-    }
-
-    return result;
+    console.warn('LaxParse: JSON.parse failed, falling back to regex extraction');
   }
+
+  // 2. Aggressive regex extraction
+  // Handles cases like {"phone": "123", "message": "Dijo "Hola""}
+  
+  // Extract phone (look for "phone": "VALUE")
+  const phoneMatch = rawBody.match(/"phone"\s*:\s*"([^"]+)"/);
+  if (phoneMatch) result.phone = phoneMatch[1].trim();
+
+  // Extract agent_slug
+  const slugMatch = rawBody.match(/"agent_slug"\s*:\s*"([^"]+)"/);
+  if (slugMatch) result.agent_slug = slugMatch[1].trim();
+
+  // Extract name (optional)
+  const nameMatch = rawBody.match(/"name"\s*:\s*"([^"]+)"/);
+  if (nameMatch) result.name = nameMatch[1].trim();
+
+  // Extract message (the most problematic field)
+  // We look for everything after "message": " until the end of the string or the closing bracket
+  const msgMatch = rawBody.match(/"message"\s*:\s*"([\s\S]*)"\s*}/) || 
+                   rawBody.match(/"message"\s*:\s*"([\s\S]*)"/);
+  
+  if (msgMatch) {
+    let msg = msgMatch[1];
+    // If it's a broken JSON, we might have captured the closing part too. Clean it.
+    if (msg.endsWith('"}')) msg = msg.slice(0, -2);
+    else if (msg.endsWith('"} ')) msg = msg.slice(0, -3);
+    result.message = msg;
+  }
+
+  return result;
 }
 
 /**

@@ -7,27 +7,42 @@ const N8N_WEBHOOK = import.meta.env.VITE_N8N_WEBHOOK
 /**
  * Normalizes a phone number.
  * For Argentina (54), it strips the '9' prefix if present to create a canonical format.
+ * Always ensures the '+' prefix is present.
  */
 export function normalizePhone(phone) {
   if (!phone) return ''
-  let clean = phone.replace(/\D/g, '')
-  if (clean.startsWith('549')) {
-    return '54' + clean.slice(3)
+  // Strip all non-numeric chars except '+'
+  let clean = phone.toString().replace(/[^\d+]/g, '')
+  
+  // Ensure it starts with '+'
+  if (clean && !clean.startsWith('+')) {
+    clean = '+' + clean
+  }
+
+  // Argentina logic: handle 549 vs 54
+  if (clean.startsWith('+549')) {
+    return '+54' + clean.slice(4)
   }
   return clean
 }
 
 /**
  * Returns potential variants of an Argentinian phone number (with and without 9).
+ * All variants include the '+' prefix.
  */
 export function getPhoneVariants(phone) {
-  const clean = phone.replace(/\D/g, '')
-  if (!clean.startsWith('54')) return [clean]
+  let clean = phone.toString().replace(/[^\d+]/g, '')
+  if (clean && !clean.startsWith('+')) {
+    clean = '+' + clean
+  }
+
+  if (!clean.startsWith('+54')) return [clean]
   
-  if (clean.startsWith('549')) {
-    return [clean, '54' + clean.slice(3)]
+  if (clean.startsWith('+549')) {
+    return [clean, '+54' + clean.slice(4)]
   } else {
-    return [clean, '549' + clean.slice(2)]
+    // +54... -> +549...
+    return [clean, '+549' + clean.slice(3)]
   }
 }
 

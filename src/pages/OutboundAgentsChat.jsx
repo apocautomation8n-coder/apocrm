@@ -12,6 +12,7 @@ import { Search, Plus, Bot, PanelRightOpen, PanelRightClose, Tag, Filter } from 
 import { supabase } from '../lib/supabaseClient'
 import LabelManager from '../components/chat/LabelManager'
 import { useLabels } from '../hooks/useMessages'
+import toast from 'react-hot-toast'
 
 export default function OutboundAgents() {
   const { agents, loading: agentsLoading, toggleBot, addAgent } = useAgents()
@@ -67,8 +68,8 @@ export default function OutboundAgents() {
   }
 
   const handleAddContact = async () => {
-    const rawPhone = newContactPhone.trim()
-    if (!rawPhone) return
+    const rawPhone = normalizePhone(newContactPhone.trim())
+    if (!rawPhone) return toast.error('El número de teléfono no es válido')
     
     try {
       const variants = getPhoneVariants(rawPhone)

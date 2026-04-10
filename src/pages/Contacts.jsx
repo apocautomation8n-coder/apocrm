@@ -7,7 +7,7 @@ import Input from '../components/ui/Input'
 import { Users, Search, Plus, Pencil, Trash2, MessageSquare } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
-import { getPhoneVariants, mergeContacts } from '../hooks/useMessages'
+import { getPhoneVariants, mergeContacts, normalizePhone } from '../hooks/useMessages'
 
 export default function Contacts() {
   const [contacts, setContacts] = useState([])
@@ -38,8 +38,8 @@ export default function Contacts() {
   })
 
   const handleSave = async () => {
-    const rawPhone = form.phone.trim()
-    if (!rawPhone) return toast.error('El teléfono es obligatorio')
+    const rawPhone = normalizePhone(form.phone.trim())
+    if (!rawPhone) return toast.error('El teléfono es obligatorio o no es válido')
 
     try {
       if (editing) {
