@@ -12,6 +12,7 @@ const VIEW_LABELS = {
   '/metrics': 'Métricas',
   '/contacts': 'Contactos',
   '/pipeline': 'Pipeline',
+  '/tasks': 'Tareas',
   '/calendar': 'Calendario',
   '/followups': 'Seguimientos',
   '/finance': 'Finanzas',
