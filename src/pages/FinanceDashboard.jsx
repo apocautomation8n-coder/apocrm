@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { StatCard } from '../components/ui/Card'
-import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, CreditCard, Wallet, Repeat, Briefcase } from 'lucide-react'
+import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, CreditCard, Wallet, Repeat, Briefcase, Calculator } from 'lucide-react'
 
 const currencies = [
   { code: 'ARS', symbol: '$', label: 'Pesos (ARS)' },
