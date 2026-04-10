@@ -262,8 +262,8 @@ export default function FinanceCash({ hideHeader = false }) {
 
       {/* Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Editar Cuenta' : 'Agregar Cuenta'}>
-        <div className="space-y-4 max-h-[80vh] overflow-y-auto px-1">
-          <section className="space-y-4">
+        <div className="space-y-6 px-1">
+          <section className="space-y-4 px-1">
             <Input label="Nombre de la cuenta" value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: Banco Galicia, Mercado Pago, Binance..." />
             <div className="grid grid-cols-2 gap-4">
               <Select label="Moneda" value={form.currency} onChange={(e) => setForm(f => ({ ...f, currency: e.target.value }))}>
@@ -273,8 +273,8 @@ export default function FinanceCash({ hideHeader = false }) {
             </div>
           </section>
 
-          <section className="p-4 rounded-2xl bg-surface-900/50 border border-surface-800/60 space-y-4">
-            <p className="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
+          <section className="p-5 rounded-2xl bg-surface-800/40 border border-surface-700/50 space-y-4 shadow-inner">
+            <p className="text-[10px] font-bold text-surface-500 uppercase tracking-[0.2em] flex items-center gap-2">
               <Building2 size={13} className="text-primary-500" />
               Identificadores Bancarios
             </p>
@@ -284,13 +284,13 @@ export default function FinanceCash({ hideHeader = false }) {
             </div>
           </section>
           
-          <section className="p-4 rounded-2xl bg-surface-900/50 border border-surface-800/60 space-y-4">
+          <section className="p-5 rounded-2xl bg-surface-800/40 border border-surface-700/50 space-y-4 shadow-inner">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-bold text-surface-400 uppercase tracking-widest flex items-center gap-2">
+              <p className="text-[10px] font-bold text-surface-500 uppercase tracking-[0.2em] flex items-center gap-2">
                 <CreditCard size={13} className="text-emerald-500" />
                 Datos de Tarjeta
               </p>
-              <Select className="!w-fit text-[10px] h-7" value={form.card_type} onChange={(e) => setForm(f => ({ ...f, card_type: e.target.value }))}>
+              <Select className="!w-fit text-[10px] h-7 bg-surface-900" value={form.card_type} onChange={(e) => setForm(f => ({ ...f, card_type: e.target.value }))}>
                 <option value="Débito">Débito</option>
                 <option value="Crédito Visa">Crédito Visa</option>
                 <option value="Crédito Master">Crédito Master</option>
@@ -308,11 +308,13 @@ export default function FinanceCash({ hideHeader = false }) {
             </div>
           </section>
 
-          <Input label="Notas adicionales" value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Ej: Cuenta para sueldos, caja chica..." />
+          <div className="px-1">
+            <Input label="Notas adicionales" value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Ej: Cuenta para sueldos, caja chica..." />
+          </div>
           
-          <div className="flex justify-end gap-2 pt-4 border-t border-surface-700/50">
+          <div className="flex justify-end gap-3 pt-4 border-t border-surface-800">
             <Button variant="secondary" onClick={() => setShowModal(false)}>Cancelar</Button>
-            <Button onClick={handleSave}>{editing ? 'Guardar Cambios' : 'Crear Cuenta'}</Button>
+            <Button onClick={handleSave} className="px-8">{editing ? 'Guardar Cambios' : 'Crear Cuenta'}</Button>
           </div>
         </div>
       </Modal>
