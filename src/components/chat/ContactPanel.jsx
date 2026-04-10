@@ -1,9 +1,11 @@
 import { User, Phone, X, Bot, Tag, Plus } from 'lucide-react'
 import Toggle from '../ui/Toggle'
 import { useLabels, addLabelToContact, removeLabelFromContact } from '../../hooks/useMessages'
-import { useState } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
+export default function ContactPanel({ contact, onClose, onToggleBot }) {
+  const { labels: allLabels } = useLabels()
   const [isAddingLabel, setIsAddingLabel] = useState(false)
   const dropdownRef = useRef(null)
 
