@@ -19,6 +19,8 @@ export default function FinanceCash({ hideHeader = false }) {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
+  const [editingBalanceId, setEditingBalanceId] = useState(null)
+  const [tempBalance, setTempBalance] = useState('')
 
   const [form, setForm] = useState({
     name: '',
@@ -88,6 +90,19 @@ export default function FinanceCash({ hideHeader = false }) {
     await supabase.from('bank_accounts').delete().eq('id', id)
     toast.success('Cuenta eliminada')
     fetchAccounts()
+  }
+
+  const handleQuickBalanceUpdate = async (id, newBalance) => {
+    const val = parseFloat(newBalance)
+    if (isNaN(val)) return setEditingBalanceId(null)
+    
+    const { error } = await supabase.from('bank_accounts').update({ balance: val }).eq('id', id)
+    if (error) toast.error('Error actualizando saldo')
+    else {
+      setAccounts(prev => prev.map(a => a.id === id ? { ...a, balance: val } : a))
+      toast.success('Saldo actualizado')
+    }
+    setEditingBalanceId(null)
   }
 
   const openNewModal = () => {
@@ -227,8 +242,36 @@ export default function FinanceCash({ hideHeader = false }) {
                       group.code === 'EUR' ? 'text-amber-400' : 
                       'text-primary-400'
                     }`}>
-                      <span className="text-xs opacity-60 mr-1">{group.code === 'USD_ARS' ? 'USD (ARS)' : group.code}</span>
-                      {group.symbol}{Number(account.balance).toLocaleString()}
+                      <span className="text-xs opacity-60 mr-1 font-mono uppercase">{group.code === 'USD_ARS' ? 'USD (ARS)' : group.code}</span>
+                      
+                      {editingBalanceId === account.id ? (
+                        <div className="inline-flex items-center gap-2">
+                          <span className="text-xl">{group.symbol}</span>
+                          <input
+                            autoFocus
+                            type="number"
+                            className="w-32 bg-surface-950/80 border border-primary-500/50 rounded-lg px-2 py-1 text-xl font-bold focus:outline-none focus:ring-1 focus:ring-primary-400"
+                            value={tempBalance}
+                            onChange={(e) => setTempBalance(e.target.value)}
+                            onBlur={() => handleQuickBalanceUpdate(account.id, tempBalance)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleQuickBalanceUpdate(account.id, tempBalance)
+                              if (e.key === 'Escape') setEditingBalanceId(null)
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <span 
+                          onClick={() => {
+                            setEditingBalanceId(account.id)
+                            setTempBalance(account.balance)
+                          }}
+                          className="cursor-pointer hover:bg-surface-800/40 px-2 py-1 -ml-2 rounded-lg transition-colors border border-transparent hover:border-surface-700/50"
+                          title="Click para editar saldo rápidamente"
+                        >
+                          {group.symbol}{Number(account.balance).toLocaleString()}
+                        </span>
+                      )}
                     </div>
 
                     {/* Banking identifiers */}
