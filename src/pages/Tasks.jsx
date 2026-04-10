@@ -4,6 +4,7 @@ import { useTasks, useTeamMembers } from '../hooks/useTasks'
 import TaskBoard from '../components/tasks/TaskBoard'
 import TaskModal from '../components/tasks/TaskModal'
 import Button from '../components/ui/Button'
+import NotificationBell from '../components/layout/NotificationBell'
 
 export default function Tasks() {
   const [view, setView] = useState('day') // 'day' | 'status'
@@ -101,10 +102,13 @@ export default function Tasks() {
           </div>
         </div>
 
-        <Button onClick={handleNewTask} className="shadow-lg shadow-primary-600/20">
-          <Plus size={18} className="mr-2" />
-          Nueva Tarea
-        </Button>
+        <div className="flex items-center gap-3">
+          <NotificationBell />
+          <Button onClick={handleNewTask} className="shadow-lg shadow-primary-600/20">
+            <Plus size={18} className="mr-2" />
+            Nueva Tarea
+          </Button>
+        </div>
       </div>
 
       {/* Kanban Board Container */}
