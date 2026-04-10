@@ -17,7 +17,7 @@ const currencies = [
   { code: 'EUR', symbol: '€', label: 'Euros (EUR)' },
 ]
 
-export default function Plans() {
+export default function Plans({ hideHeader = false }) {
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -114,8 +114,9 @@ export default function Plans() {
   }
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
+    <div className={`space-y-6 animate-fade-in ${!hideHeader ? 'p-6' : 'py-2'}`}>
       {/* Header */}
+      {!hideHeader && (
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-surface-100 flex items-center gap-3">
@@ -129,6 +130,7 @@ export default function Plans() {
           Agregar mantenimiento
         </Button>
       </div>
+      )}
 
       {/* KPI Cards (per currency) */}
       <div className="space-y-6">
