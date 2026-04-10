@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { StatCard } from '../components/ui/Card'
-import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, CreditCard, Wallet, Repeat, Briefcase, Calculator } from 'lucide-react'
+import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, CreditCard, Wallet, Repeat, Briefcase, Calculator, HelpCircle } from 'lucide-react'
 
 const currencies = [
   { code: 'ARS', symbol: '$', label: 'Pesos (ARS)' },
@@ -142,6 +142,16 @@ export default function FinanceDashboard() {
     return num.toLocaleString()
   }
 
+  const InfoIcon = ({ text }) => (
+    <div className="group relative inline-block ml-1 inline-flex items-center">
+      <HelpCircle size={10} className="text-surface-500 hover:text-primary-400 cursor-help transition-colors" />
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-surface-800 border border-surface-700 rounded-lg text-[10px] text-surface-200 leading-tight opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-2xl backdrop-blur-md">
+        {text}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-surface-800" />
+      </div>
+    </div>
+  )
+
   return (
     <div className="space-y-10 py-2 animate-fade-in">
       {/* Consolidated Summary in ARS */}
@@ -154,7 +164,10 @@ export default function FinanceDashboard() {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-1">
-            <p className="text-xs text-surface-400 font-medium uppercase tracking-wider">Facturación Bruta (Potencial)</p>
+            <p className="text-xs text-surface-400 font-medium uppercase tracking-wider flex items-center">
+              Facturación Bruta (Potencial)
+              <InfoIcon text="Suma total de presupuestos de proyectos activos + MRR de mensualidades." />
+            </p>
             <p className="text-3xl font-black text-white whitespace-nowrap overflow-hidden text-ellipsis">
               <span className="text-xs font-bold text-primary-400 mr-2">ARS</span>
               ${fmt(consolidated.totalBrutoArs)}
@@ -163,7 +176,10 @@ export default function FinanceDashboard() {
           </div>
           
           <div className="space-y-1">
-            <p className="text-xs text-surface-400 font-medium uppercase tracking-wider">Ganancia Pendiente (Limpio)</p>
+            <p className="text-xs text-surface-400 font-medium uppercase tracking-wider flex items-center">
+              Ganancia Pendiente (Limpio)
+              <InfoIcon text="Lo que falta cobrar de proyectos que es ganancia pura (restando costos de freelancers)." />
+            </p>
             <p className="text-3xl font-black text-amber-400 whitespace-nowrap overflow-hidden text-ellipsis">
               <span className="text-xs font-bold text-amber-500/60 mr-2">ARS</span>
               ${fmt(consolidated.totalPendingArs)}
@@ -172,7 +188,10 @@ export default function FinanceDashboard() {
           </div>
 
           <div className="space-y-1">
-            <p className="text-xs text-surface-400 font-medium uppercase tracking-wider">Ganancia Neta Total (Proyectada)</p>
+            <p className="text-xs text-surface-400 font-medium uppercase tracking-wider flex items-center">
+              Ganancia Neta Total (Proyectada)
+              <InfoIcon text="La ganancia final esperada una vez se cobre el 100% y se descuenten todos los costos." />
+            </p>
             <p className={`text-3xl font-black whitespace-nowrap overflow-hidden text-ellipsis ${consolidated.totalNetArs >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               <span className="text-xs font-bold opacity-60 mr-2">ARS</span>
               ${fmt(consolidated.totalNetArs)}
@@ -220,14 +239,20 @@ export default function FinanceDashboard() {
                 {/* KPIs */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-surface-800/40 rounded-xl p-3.5 border border-surface-700/30">
-                    <p className="text-[10px] text-surface-500 uppercase tracking-wider mb-1">MRR (Ingresos)</p>
+                    <p className="text-[10px] text-surface-500 uppercase tracking-wider mb-1 flex items-center">
+                      MRR (Ingresos)
+                      <InfoIcon text="Ingreso Mensual Recurrente proveniente de mensualidades activas." />
+                    </p>
                     <p className="text-lg font-bold text-emerald-400">
                       <span className="text-[10px] opacity-60 mr-0.5">{d.code}</span>
                       {d.symbol}{fmt(d.mrr)}
                     </p>
                   </div>
                   <div className="bg-surface-800/40 rounded-xl p-3.5 border border-surface-700/30">
-                    <p className="text-[10px] text-surface-500 uppercase tracking-wider mb-1">Gastos Fijos</p>
+                    <p className="text-[10px] text-surface-500 uppercase tracking-wider mb-1 flex items-center">
+                      Gastos Fijos
+                      <InfoIcon text="Suma de freelancers de planes y egresos marcados como recurrentes." />
+                    </p>
                     <p className="text-lg font-bold text-red-400">
                       <span className="text-[10px] opacity-60 mr-0.5">{d.code}</span>
                       {d.symbol}{fmt(d.fixedTotalCosts)}
@@ -254,7 +279,10 @@ export default function FinanceDashboard() {
 
                 {/* Net */}
                 <div className="flex items-center justify-between pt-2 border-t border-surface-700/30">
-                  <span className="text-xs text-surface-400">Ganancia neta mensual</span>
+                  <span className="text-xs text-surface-400 flex items-center">
+                    Ganancia neta mensual
+                    <InfoIcon text="Diferencia limpia entre MRR y Gastos Fijos por mes." />
+                  </span>
                   <div className="flex items-center gap-2">
                     <span className={`text-lg font-bold ${d.fixedNetProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {d.symbol}{fmt(d.fixedNetProfit)}
@@ -276,7 +304,10 @@ export default function FinanceDashboard() {
                 {/* KPIs */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-surface-800/40 rounded-xl p-3.5 border border-surface-700/30">
-                    <p className="text-[10px] text-surface-500 uppercase tracking-wider mb-1">Cobrado</p>
+                    <p className="text-[10px] text-surface-500 uppercase tracking-wider mb-1 flex items-center">
+                      Cobrado
+                      <InfoIcon text="Dinero total recibido efectivamente por proyectos únicos." />
+                    </p>
                     <p className="text-lg font-bold text-emerald-400">
                       <span className="text-[10px] opacity-60 mr-0.5">{d.code}</span>
                       {d.symbol}{fmt(d.projectCollected)}
@@ -288,7 +319,10 @@ export default function FinanceDashboard() {
                     )}
                   </div>
                   <div className="bg-surface-800/40 rounded-xl p-3.5 border border-surface-700/30">
-                    <p className="text-[10px] text-surface-500 uppercase tracking-wider mb-1">Gastos Únicos</p>
+                    <p className="text-[10px] text-surface-500 uppercase tracking-wider mb-1 flex items-center">
+                      Gastos Únicos
+                      <InfoIcon text="Costos de freelancers y egresos puntuales de proyectos." />
+                    </p>
                     <p className="text-lg font-bold text-red-400">
                       <span className="text-[10px] opacity-60 mr-0.5">{d.code}</span>
                       {d.symbol}{fmt(d.onetimeTotalCosts)}
@@ -299,8 +333,16 @@ export default function FinanceDashboard() {
                 {/* Breakdown + bar */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-[11px]">
-                    <span className="text-surface-400">Ganancia Cobrada: <span className="text-emerald-400 font-semibold">{d.symbol}{fmt(d.projectRealizedNet)}</span></span>
-                    <span className="text-surface-400">Pendiente Limpio: <span className="text-amber-400 font-semibold">{d.symbol}{fmt(d.projectPendingNet)}</span></span>
+                    <span className="text-surface-400 flex items-center">
+                      Ganancia Cobrada
+                      <InfoIcon text="Beneficio neto ya realizado del dinero cobrado (restando costos)." />: 
+                      <span className="text-emerald-400 font-semibold ml-1">{d.symbol}{fmt(d.projectRealizedNet)}</span>
+                    </span>
+                    <span className="text-surface-400 flex items-center">
+                      Pendiente Limpio
+                      <InfoIcon text="Ganancia neta que todavía falta por cobrar de los proyectos." />: 
+                      <span className="text-amber-400 font-semibold ml-1">{d.symbol}{fmt(d.projectPendingNet)}</span>
+                    </span>
                   </div>
                   <div className="h-3 rounded-full bg-surface-800 overflow-hidden flex">
                     {d.projectBudget > 0 && (
@@ -315,7 +357,10 @@ export default function FinanceDashboard() {
 
                 {/* Net */}
                 <div className="flex items-center justify-between pt-2 border-t border-surface-700/30">
-                  <span className="text-xs text-surface-400">Ganancia neta total proyectada</span>
+                  <span className="text-xs text-surface-400 flex items-center">
+                    Ganancia neta total proyectada
+                    <InfoIcon text="Beneficio final del proyecto una vez cobrado al 100% y pagados todos los costos." />
+                  </span>
                   <div className="flex items-center gap-2">
                     <span className={`text-lg font-bold ${d.projectExpectedNet >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {d.symbol}{fmt(d.projectExpectedNet)}
