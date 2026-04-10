@@ -4,9 +4,18 @@ import { useLabels, addLabelToContact, removeLabelFromContact } from '../../hook
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 
-export default function ContactPanel({ contact, onClose, onToggleBot }) {
-  const { labels: allLabels } = useLabels()
-  if (!contact) return null
+  const [isAddingLabel, setIsAddingLabel] = useState(false)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsAddingLabel(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   return (
     <div className="w-72 border-l border-surface-800/60 bg-surface-900/80 shrink-0 animate-slide-right">
@@ -71,64 +80,75 @@ export default function ContactPanel({ contact, onClose, onToggleBot }) {
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2 text-surface-400">
-              <Tag size={14} />
-              <span className="text-xs font-bold uppercase tracking-wider text-[10px]">Etiquetas</span>
+              <Tag size={13} />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Etiquetas</span>
             </div>
             
-            {/* Add Label Dropdown (Compact) */}
-            <div className="relative group/add shrink-0">
-              <select
-                defaultValue=""
-                onChange={async (e) => {
-                  const labelId = e.target.value
-                  if (!labelId) return
-                  if (contact.labels?.some(l => l.id === labelId)) {
-                    toast.error('Ya tiene esta etiqueta')
-                    e.target.value = ""
-                    return
-                  }
-                  const { error } = await addLabelToContact(contact.id, labelId)
-                  if (error) toast.error('Error al asignar etiqueta')
-                  e.target.value = ""
-                }}
-                className="w-8 h-8 opacity-0 absolute inset-0 cursor-pointer z-10"
+            {/* Custom Label Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                onClick={() => setIsAddingLabel(!isAddingLabel)}
+                className={`
+                  w-6 h-6 rounded-lg flex items-center justify-center transition-all border
+                  ${isAddingLabel 
+                    ? 'bg-primary-600/20 border-primary-500/30 text-primary-400' 
+                    : 'bg-surface-800 border-transparent text-surface-500 hover:text-surface-300 hover:bg-surface-700'}
+                `}
               >
-                <option value="" disabled>+</option>
-                {allLabels
-                  .filter(l => !contact.labels?.some(cl => cl.id === l.id))
-                  .map(label => (
-                    <option key={label.id} value={label.id}>{label.name}</option>
-                  ))
-                }
-              </select>
-              <button className="w-6 h-6 rounded-lg bg-surface-800 flex items-center justify-center text-surface-500 group-hover/add:text-primary-400 group-hover/add:bg-primary-400/10 transition-all border border-transparent group-hover/add:border-primary-500/30">
-                <Plus size={14} />
+                <Plus size={14} className={`transition-transform duration-200 ${isAddingLabel ? 'rotate-45' : ''}`} />
               </button>
+
+              {isAddingLabel && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-surface-800 border border-surface-700 shadow-2xl rounded-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="p-1 max-h-48 overflow-y-auto custom-scrollbar">
+                    {allLabels
+                      .filter(l => !contact.labels?.some(cl => cl.id === l.id))
+                      .map(label => (
+                        <button
+                          key={label.id}
+                          onClick={async () => {
+                            const { error } = await addLabelToContact(contact.id, label.id)
+                            if (error) toast.error('Error al asignar')
+                            setIsAddingLabel(false)
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-surface-700 text-left transition-colors group"
+                        >
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: label.color }} />
+                          <span className="text-[11px] font-medium text-surface-300 group-hover:text-surface-100">{label.name}</span>
+                        </button>
+                      ))
+                    }
+                    {allLabels.filter(l => !contact.labels?.some(cl => cl.id === l.id)).length === 0 && (
+                      <p className="p-3 text-[10px] text-surface-500 text-center italic">No hay más etiquetas</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           
-          {/* Current Labels */}
-          <div className="flex flex-wrap gap-1.5 min-h-[12px]">
+          {/* Tag Pills */}
+          <div className="flex flex-wrap gap-2 min-h-[12px]">
             {contact.labels?.map(label => (
               <div
                 key={label.id}
-                className="group flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white shadow-sm transition-all"
+                className="group flex items-center gap-1.5 pl-2 pr-1.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest text-white shadow-lg transition-all hover:scale-105 active:scale-95"
                 style={{ backgroundColor: label.color }}
               >
                 {label.name}
                 <button
                   onClick={async () => {
                     const { error } = await removeLabelFromContact(contact.id, label.id)
-                    if (error) toast.error('Error al quitar etiqueta')
+                    if (error) toast.error('Error al quitar')
                   }}
-                  className="p-0.5 rounded hover:bg-black/20 transition-colors cursor-pointer"
+                  className="p-0.5 rounded-full hover:bg-black/20 transition-colors"
                 >
-                  <X size={10} />
+                  <X size={10} strokeWidth={3} />
                 </button>
               </div>
             ))}
             {(!contact.labels || contact.labels.length === 0) && (
-              <p className="text-[10px] text-surface-600 italic px-1">Sin etiquetas</p>
+              <p className="text-[10px] text-surface-600 italic px-1 mt-1 font-medium">Sin etiquetas asignadas</p>
             )}
           </div>
         </div>

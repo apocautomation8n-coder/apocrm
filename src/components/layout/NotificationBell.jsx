@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Bell, Check, X, BellOff } from 'lucide-react'
+import { Bell, Check, X, BellOff, ChevronRight } from 'lucide-react'
 import { useNotifications, useTeamMembers } from '../../hooks/useTasks'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
