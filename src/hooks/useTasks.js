@@ -84,6 +84,9 @@ export function useTasks(memberId = 'all') {
   }
 
   const updateTask = async (taskId, updates) => {
+    // Optimistic update for instant UI feedback (especially important for drag and drop)
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t))
+
     const { assigned_to_ids, ...rest } = updates
     
     // 1. Update task basic info
@@ -114,6 +117,9 @@ export function useTasks(memberId = 'all') {
   }
 
   const deleteTask = async (taskId) => {
+    // Optimistic update
+    setTasks(prev => prev.filter(t => t.id !== taskId))
+
     const { error } = await supabase.from('tasks').delete().eq('id', taskId)
     if (error) {
       toast.error('Error eliminando tarea')
