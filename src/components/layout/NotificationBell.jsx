@@ -4,7 +4,7 @@ import { useNotifications, useTeamMembers } from '../../hooks/useTasks'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-export default function NotificationBell() {
+export default function NotificationBell({ collapsed }) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
   
@@ -31,29 +31,31 @@ export default function NotificationBell() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <div className="flex items-center gap-3">
+      <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
         {/* Member Selector (simplified for now) */}
-        <select 
-          value={currentMemberId}
-          onChange={(e) => setCurrentMemberId(e.target.value)}
-          className="bg-surface-800/40 border border-surface-700/30 text-surface-400 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500/40 transition-all cursor-pointer"
-        >
-          <option value="all">Ver todos</option>
-          {members.map(m => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
-        </select>
+        {!collapsed && (
+          <select 
+            value={currentMemberId}
+            onChange={(e) => setCurrentMemberId(e.target.value)}
+            className="flex-1 min-w-0 bg-surface-800/40 border border-surface-700/30 text-surface-400 text-[10px] font-bold uppercase tracking-wider px-2 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500/40 transition-all cursor-pointer truncate"
+          >
+            <option value="all">Todos</option>
+            {members.map(m => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        )}
 
         {/* Bell Button */}
         <button
-          disabled={currentMemberId === 'all'}
+          disabled={currentMemberId === 'all' && !collapsed}
           onClick={() => setIsOpen(!isOpen)}
           className={`
-            relative p-2 rounded-xl transition-all cursor-pointer
+            relative p-2 rounded-xl transition-all cursor-pointer shrink-0
             ${isOpen ? 'bg-primary-600/20 text-primary-400' : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800/60'}
-            ${currentMemberId === 'all' ? 'opacity-30 grayscale cursor-not-allowed' : ''}
+            ${currentMemberId === 'all' && !collapsed ? 'opacity-30 grayscale cursor-not-allowed' : ''}
           `}
-          title={currentMemberId === 'all' ? 'Selecciona un perfil para ver notificaciones' : 'Notificaciones'}
+          title={currentMemberId === 'all' && !collapsed ? 'Selecciona un perfil para ver notificaciones' : 'Notificaciones'}
         >
           <Bell size={20} />
           {unreadCount > 0 && (
@@ -65,7 +67,10 @@ export default function NotificationBell() {
       </div>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 max-h-[480px] bg-surface-900 border border-surface-800 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-150">
+        <div className={`
+          absolute z-[100] mt-2 w-80 max-h-[480px] bg-surface-900 border border-surface-800 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150
+          ${collapsed ? 'left-full bottom-0 ml-4 mb-0' : 'bottom-full mb-2 left-0'}
+        `}>
           {/* Header */}
           <div className="p-4 border-b border-surface-800/60 bg-surface-900/50 flex items-center justify-between">
             <h3 className="text-sm font-bold text-surface-100 flex items-center gap-2">

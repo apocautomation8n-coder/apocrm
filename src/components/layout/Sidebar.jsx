@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
+import NotificationBell from './NotificationBell'
 import {
   MessageSquare,
   BarChart3,
@@ -166,6 +167,9 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="px-3 py-3 border-t border-surface-800/60 space-y-1">
+        <div className="px-3 py-2">
+          <NotificationBell collapsed={collapsed} />
+        </div>
         <button
           onClick={signOut}
           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-surface-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 cursor-pointer"

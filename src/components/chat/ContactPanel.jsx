@@ -72,12 +72,43 @@ export default function ContactPanel({ contact, onClose, onToggleBot }) {
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2 text-surface-400">
               <Tag size={14} />
-              <span className="text-xs font-bold uppercase tracking-wider">Etiquetas</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[10px]">Etiquetas</span>
+            </div>
+            
+            {/* Add Label Dropdown (Compact) */}
+            <div className="relative group/add shrink-0">
+              <select
+                defaultValue=""
+                onChange={async (e) => {
+                  const labelId = e.target.value
+                  if (!labelId) return
+                  if (contact.labels?.some(l => l.id === labelId)) {
+                    toast.error('Ya tiene esta etiqueta')
+                    e.target.value = ""
+                    return
+                  }
+                  const { error } = await addLabelToContact(contact.id, labelId)
+                  if (error) toast.error('Error al asignar etiqueta')
+                  e.target.value = ""
+                }}
+                className="w-8 h-8 opacity-0 absolute inset-0 cursor-pointer z-10"
+              >
+                <option value="" disabled>+</option>
+                {allLabels
+                  .filter(l => !contact.labels?.some(cl => cl.id === l.id))
+                  .map(label => (
+                    <option key={label.id} value={label.id}>{label.name}</option>
+                  ))
+                }
+              </select>
+              <button className="w-6 h-6 rounded-lg bg-surface-800 flex items-center justify-center text-surface-500 group-hover/add:text-primary-400 group-hover/add:bg-primary-400/10 transition-all border border-transparent group-hover/add:border-primary-500/30">
+                <Plus size={14} />
+              </button>
             </div>
           </div>
           
           {/* Current Labels */}
-          <div className="flex flex-wrap gap-1.5 min-h-[24px]">
+          <div className="flex flex-wrap gap-1.5 min-h-[12px]">
             {contact.labels?.map(label => (
               <div
                 key={label.id}
@@ -89,10 +120,6 @@ export default function ContactPanel({ contact, onClose, onToggleBot }) {
                   onClick={async () => {
                     const { error } = await removeLabelFromContact(contact.id, label.id)
                     if (error) toast.error('Error al quitar etiqueta')
-                    else {
-                      // Note: Realtime or refetch in OutboundAgents will update this
-                      // For immediate feedback we could handle local state if needed
-                    }
                   }}
                   className="p-0.5 rounded hover:bg-black/20 transition-colors cursor-pointer"
                 >
@@ -103,37 +130,6 @@ export default function ContactPanel({ contact, onClose, onToggleBot }) {
             {(!contact.labels || contact.labels.length === 0) && (
               <p className="text-[10px] text-surface-600 italic px-1">Sin etiquetas</p>
             )}
-          </div>
-
-          {/* Add Label Dropdown */}
-          <div className="relative pt-1 group/add">
-            <select
-              defaultValue=""
-              onChange={async (e) => {
-                const labelId = e.target.value
-                if (!labelId) return
-                if (contact.labels?.some(l => l.id === labelId)) {
-                  toast.error('Ya tiene esta etiqueta')
-                  e.target.value = ""
-                  return
-                }
-                const { error } = await addLabelToContact(contact.id, labelId)
-                if (error) toast.error('Error al asignar etiqueta')
-                e.target.value = ""
-              }}
-              className="w-full pl-3 pr-8 py-2 text-[11px] font-medium rounded-xl bg-surface-800/40 border border-surface-700/30 text-surface-400 hover:text-surface-200 hover:border-primary-500/30 appearance-none focus:outline-none transition-all cursor-pointer"
-            >
-              <option value="" disabled>+ Asignar etiqueta...</option>
-              {allLabels
-                .filter(l => !contact.labels?.some(cl => cl.id === l.id))
-                .map(label => (
-                  <option key={label.id} value={label.id}>{label.name}</option>
-                ))
-              }
-            </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-surface-500 group-hover/add:text-primary-400 transition-colors">
-              <Plus size={12} />
-            </div>
           </div>
         </div>
       </div>
