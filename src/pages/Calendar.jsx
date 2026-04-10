@@ -405,8 +405,18 @@ export default function Calendar() {
       {/* Upcoming Meetings with Meet Links */}
       {(() => {
         const todayStr = format(new Date(), 'yyyy-MM-dd')
+        const now = new Date()
+        const currentHourMin = format(now, 'HH:mm')
+        
         const upcoming = events
-          .filter(e => e.date >= todayStr)
+          .filter(e => {
+            if (e.date < todayStr) return false
+            if (e.date === todayStr) {
+               const endCompare = e.end_time || (e.start_time ? format(addHours(parseISO(`1970-01-01T${e.start_time}`), 1), 'HH:mm') : '23:59')
+               return currentHourMin <= endCompare
+            }
+            return true
+          })
           .sort((a, b) => {
             if (a.date !== b.date) return a.date.localeCompare(b.date)
             return (a.start_time || '').localeCompare(b.start_time || '')

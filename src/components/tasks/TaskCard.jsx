@@ -1,7 +1,7 @@
 import { useDraggable } from '@dnd-kit/core'
 import { format, isPast, isToday as isDateToday, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Calendar, Clock, Tag, User, Pencil, Trash2, AlertCircle } from 'lucide-react'
+import { Calendar, Clock, Tag, User, Pencil, Trash2, AlertCircle, CheckCircle } from 'lucide-react'
 
 const PRIORITY_COLORS = {
   baja: '#8a8a8a',
@@ -119,14 +119,24 @@ export default function TaskCard({ task, isDragging, onEdit, onDelete }) {
 
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
+            onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+            className="p-1.5 rounded-lg text-emerald-500 hover:text-emerald-400 hover:bg-emerald-400/10 transition-all cursor-pointer"
+            title="Marcar como completada y eliminar"
+          >
+            <CheckCircle size={14} />
+          </button>
+          <div className="w-[1px] h-4 bg-surface-800/60 mx-1" />
+          <button
             onClick={(e) => { e.stopPropagation(); onEdit(task); }}
             className="p-1.5 rounded-lg text-surface-500 hover:text-primary-400 hover:bg-primary-400/10 transition-all cursor-pointer"
+            title="Editar tarea"
           >
             <Pencil size={14} />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
             className="p-1.5 rounded-lg text-surface-500 hover:text-red-400 hover:bg-red-400/10 transition-all cursor-pointer"
+            title="Eliminar tarea"
           >
             <Trash2 size={14} />
           </button>
