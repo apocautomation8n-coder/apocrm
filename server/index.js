@@ -7,6 +7,7 @@ import sheetsRouter from './routes/sheets.js'
 import calendarRouter from './routes/calendar.js'
 import contactsRouter from './routes/contacts.js'
 import usersRouter from './routes/users.js'
+import { ultraParser, sendError } from './utils.js'
 
 
 dotenv.config()
@@ -18,6 +19,9 @@ app.use(cors())
 // Capture as text to handle malformed JSON from n8n
 app.use(express.text({ type: ['application/json', 'text/plain'], limit: '10mb' }))
 app.use(express.json({ limit: '10mb' }))
+
+// Global Robustness Middleware
+app.use(ultraParser)
 
 // Routes
 app.use('/api/messages', messagesRouter)
@@ -31,6 +35,12 @@ app.use('/api/users', usersRouter)
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled Exception:', err)
+  sendError(res, err.message || 'Internal Server Error', 500)
 })
 
 // Only start the server locally. Vercel will simply import the app.
