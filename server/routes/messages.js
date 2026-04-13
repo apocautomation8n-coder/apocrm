@@ -8,7 +8,12 @@ const router = Router()
 router.post('/inbound', async (req, res) => {
   try {
     const body = laxParse(req.body)
-    const { name, phone, timestamp, message, agent_slug } = body
+    const phone = body.phone || req.query.phone
+    const name = body.name || req.query.name
+    const message = body.message || req.query.message
+    const agent_slug = body.agent_slug || req.query.agent_slug
+    const timestamp = body.timestamp || req.query.timestamp
+
     const normalizedPhone = normalizePhone(phone)
 
     if (!normalizedPhone || !agent_slug) {
@@ -100,7 +105,11 @@ router.get('/inbound', async (req, res) => {
 router.post('/bot-outbound', async (req, res) => {
   try {
     const body = laxParse(req.body)
-    const { phone, message, agent_slug, timestamp } = body
+    const phone = body.phone || req.query.phone
+    const message = body.message || req.query.message
+    const agent_slug = body.agent_slug || req.query.agent_slug
+    const timestamp = body.timestamp || req.query.timestamp
+
     const normalizedPhone = normalizePhone(phone)
 
     if (!normalizedPhone || !agent_slug) {

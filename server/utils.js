@@ -4,20 +4,16 @@
 
 /**
  * Normalizes a phone number to standard international format (e.g., +5491112345678)
- * Strips all non-numeric characters except for the leading '+'
- * If no '+' is present, it adds it if feasible or just returns cleaned numeric string
+ * Strips all non-numeric characters and ensures a leading '+'
  */
 export function normalizePhone(phone) {
   if (!phone) return null;
-  // Strip all non-numeric chars except '+'
-  let cleaned = phone.toString().replace(/[^\d+]/g, '');
+  // Strip everything except digits
+  let digits = phone.toString().replace(/\D/g, '');
+  if (!digits) return null;
   
-  // Ensure it starts with '+'
-  if (cleaned && !cleaned.startsWith('+')) {
-    cleaned = '+' + cleaned;
-  }
-  
-  return cleaned;
+  // Return with leading '+'
+  return '+' + digits;
 }
 
 /**
@@ -26,41 +22,52 @@ export function normalizePhone(phone) {
  */
 export function laxParse(rawBody) {
   if (!rawBody) return {};
-  if (typeof rawBody === 'object') return rawBody;
+  
+  // If it's already an object, return it but ensure it's not null
+  if (typeof rawBody === 'object' && rawBody !== null) return rawBody;
 
   const result = {};
+  const strBody = String(rawBody);
 
   // 1. Try standard JSON parse
   try {
-    const parsed = JSON.parse(rawBody);
+    const parsed = JSON.parse(strBody);
     if (parsed && typeof parsed === 'object') return parsed;
   } catch (err) {
-    console.warn('LaxParse: JSON.parse failed, falling back to regex extraction');
+    // console.warn('LaxParse: JSON.parse failed, falling back to regex extraction');
   }
 
   // 2. Aggressive regex extraction
   // Handles cases like {"phone": "123", "message": "Dijo "Hola""}
   
-  // Extract phone (look for "phone": "VALUE")
-  const phoneMatch = rawBody.match(/"phone"\s*:\s*"([^"]+)"/);
-  if (phoneMatch) result.phone = phoneMatch[1].trim();
+  const extract = (key) => {
+    // Look for "key": "value" or 'key': 'value' or key: "value"
+    const patterns = [
+      new RegExp(`"${key}"\\s*:\\s*"([^"]*)"`, 'i'),
+      new RegExp(`'${key}'\\s*:\\s*'([^']*)'`, 'i'),
+      new RegExp(`"${key}"\\s*:\\s*'([^']*)'`, 'i'),
+      new RegExp(`'${key}'\\s*:\\s*"([^"]*)"`, 'i'),
+      new RegExp(`${key}\\s*:\\s*"([^"]*)"`, 'i'),
+      new RegExp(`${key}\\s*:\\s*'([^']*)'`, 'i')
+    ];
+    
+    for (const pattern of patterns) {
+      const match = strBody.match(pattern);
+      if (match) return match[1].trim();
+    }
+    return null;
+  };
 
-  // Extract agent_slug
-  const slugMatch = rawBody.match(/"agent_slug"\s*:\s*"([^"]+)"/);
-  if (slugMatch) result.agent_slug = slugMatch[1].trim();
-
-  // Extract name (optional)
-  const nameMatch = rawBody.match(/"name"\s*:\s*"([^"]+)"/);
-  if (nameMatch) result.name = nameMatch[1].trim();
-
-  // Extract message (the most problematic field)
-  // We look for everything after "message": " until the end of the string or the closing bracket
-  const msgMatch = rawBody.match(/"message"\s*:\s*"([\s\S]*)"\s*}/) || 
-                   rawBody.match(/"message"\s*:\s*"([\s\S]*)"/);
+  result.phone = extract('phone');
+  result.name = extract('name');
+  result.agent_slug = extract('agent_slug') || extract('agent');
+  
+  // Extract message (handling potential broken JSON at the end)
+  const msgMatch = strBody.match(/"message"\s*:\s*"([\s\S]*)"\s*}/) || 
+                   strBody.match(/"message"\s*:\s*"([\s\S]*)"/);
   
   if (msgMatch) {
     let msg = msgMatch[1];
-    // If it's a broken JSON, we might have captured the closing part too. Clean it.
     if (msg.endsWith('"}')) msg = msg.slice(0, -2);
     else if (msg.endsWith('"} ')) msg = msg.slice(0, -3);
     result.message = msg;

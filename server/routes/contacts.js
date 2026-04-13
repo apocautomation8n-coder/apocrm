@@ -1,13 +1,16 @@
 import { Router } from 'express'
 import supabase from '../supabaseAdmin.js'
-import { normalizePhone, sendSuccess, sendError } from '../utils.js'
+import { normalizePhone, sendSuccess, sendError, laxParse } from '../utils.js'
 
 const router = Router()
 
 // POST /api/contacts — create or update a contact
 router.post('/', async (req, res) => {
   try {
-    const { name, phone } = req.body
+    const body = laxParse(req.body)
+    const phone = body.phone || req.query.phone
+    const name = body.name || req.query.name
+
     const normalizedPhone = normalizePhone(phone)
 
     if (!normalizedPhone) {
@@ -106,7 +109,10 @@ router.get('/check-conversation/:phone', async (req, res) => {
 // POST /api/contacts/open-conversation — ensure a contact exists and is ready
 router.post('/open-conversation', async (req, res) => {
   try {
-    const { phone, name } = req.body
+    const body = laxParse(req.body)
+    const phone = body.phone || req.query.phone
+    const name = body.name || req.query.name
+
     const normalizedPhone = normalizePhone(phone)
 
     if (!normalizedPhone) {
