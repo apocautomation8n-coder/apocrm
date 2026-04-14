@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
-import Select from '../ui/Select'
+import Select from '../components/ui/Select'
 import { ArrowLeft, Save, Download, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
@@ -238,7 +238,7 @@ export default function InvoiceForm() {
               {clients.map(c => (
                 <option key={c.id} value={c.id}>{c.name} {c.tax_id ? `- ${c.tax_id_type}: ${c.tax_id}` : ''}</option>
               ))}
-            select>
+            </select>
           </div>
 
           {/* Core Info */}
