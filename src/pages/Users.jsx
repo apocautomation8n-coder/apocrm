@@ -16,6 +16,7 @@ const VIEW_LABELS = {
   '/calendar': 'Calendario',
   '/followups': 'Seguimientos',
   '/finance': 'Finanzas',
+  '/invoices': 'Facturas',
   '/plans': 'Mensualidades',
   '/converter': 'Conversión de Capital',
   '/users': 'Usuarios'

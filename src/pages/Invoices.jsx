@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useNavigate } from 'react-router-dom'
 import Button from '../components/ui/Button'
-import { Plus, Search, FileText, Settings, Users, Eye, Pencil, Trash2, Download } from 'lucide-react'
+import { Plus, Search, FileText, Settings, Users, Eye, Pencil, Trash2, Download, Banknote, Clock, CheckCircle2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { format, parseISO } from 'date-fns'
 import InvoiceSettingsModal from '../components/invoices/InvoiceSettingsModal'
@@ -133,16 +133,28 @@ export default function Invoices() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-surface-900/60 border border-surface-800/60 shadow-lg">
-          <div className="text-sm text-surface-400 font-medium mb-1">💵 Total emitido (USD eq)</div>
+        <div className="p-5 rounded-2xl bg-surface-900/60 border border-surface-800/60 shadow-lg relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#7a9e82]/5 rounded-full blur-xl pointer-events-none" />
+          <div className="flex items-center gap-2 text-sm text-surface-400 font-medium mb-2">
+            <Banknote size={16} className="text-[#7a9e82]" />
+            Total emitido (USD eq)
+          </div>
           <div className="text-2xl font-bold text-surface-100">${metrics.total_issued.toLocaleString('es-AR', {maximumFractionDigits:0})}</div>
         </div>
-        <div className="p-5 rounded-2xl bg-amber-500/5 border border-amber-500/10 shadow-lg">
-          <div className="text-sm text-amber-500/80 font-medium mb-1">⏳ Pendiente de cobro</div>
+        <div className="p-5 rounded-2xl bg-surface-900/60 border border-amber-500/10 shadow-lg relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/5 rounded-full blur-xl pointer-events-none" />
+          <div className="flex items-center gap-2 text-sm text-amber-500/80 font-medium mb-2">
+            <Clock size={16} />
+            Pendiente de cobro
+          </div>
           <div className="text-2xl font-bold text-amber-500">${metrics.pending.toLocaleString('es-AR', {maximumFractionDigits:0})}</div>
         </div>
-        <div className="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 shadow-lg">
-          <div className="text-sm text-emerald-500/80 font-medium mb-1">✅ Cobrado</div>
+        <div className="p-5 rounded-2xl bg-surface-900/60 border border-emerald-500/10 shadow-lg relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl pointer-events-none" />
+          <div className="flex items-center gap-2 text-sm text-emerald-500/80 font-medium mb-2">
+            <CheckCircle2 size={16} />
+            Cobrado
+          </div>
           <div className="text-2xl font-bold text-emerald-500">${metrics.paid.toLocaleString('es-AR', {maximumFractionDigits:0})}</div>
         </div>
       </div>
