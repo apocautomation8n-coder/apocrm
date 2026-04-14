@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { StatCard } from '../components/ui/Card'
 import Tabs from '../components/ui/Tabs'
 import Button from '../components/ui/Button'
-import { Send, UserCheck, MessageSquareX, RefreshCw, BarChart3, Edit2, Save, X, History, CheckCircle2 } from 'lucide-react'
+import { Send, UserCheck, MessageSquareX, RefreshCw, BarChart3, Edit2, Save, X, History, CheckCircle2, CalendarDays } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 // Dynamic agents will be fetched from the database
@@ -19,7 +19,8 @@ export default function Metrics() {
   const [crmMetrics, setCrmMetrics] = useState({
     sent: 0,
     replied: 0,
-    unanswered: 0
+    unanswered: 0,
+    meetings: 0
   })
 
   const [followUpMetrics, setFollowUpMetrics] = useState({
@@ -31,7 +32,8 @@ export default function Metrics() {
     override_metrics: false,
     manual_sent: 0,
     manual_replied: 0,
-    manual_unanswered: 0
+    manual_unanswered: 0,
+    manual_meetings: 0
   })
 
   // 1. Fetch Agents List
@@ -79,10 +81,34 @@ export default function Metrics() {
         if (!repliedSet.has(cid)) unansweredCount++
       })
 
+      // Scheduled Meetings (Contacts in messagedSet with "Reunion Agendada" label)
+      let meetingsCount = 0
+      if (messagedSet.size > 0) {
+        // Find label
+        const { data: labelData } = await supabase
+          .from('labels')
+          .select('id')
+          .eq('name', 'Reunion Agendada')
+          .single()
+
+        if (labelData) {
+          const { data: clData } = await supabase
+            .from('contact_labels')
+            .select('contact_id')
+            .eq('label_id', labelData.id)
+            .in('contact_id', Array.from(messagedSet))
+          
+          if (clData) {
+            meetingsCount = clData.length
+          }
+        }
+      }
+
       setCrmMetrics({
         sent: messagedSet.size || 0,
         replied: repliedCount || 0,
-        unanswered: unansweredCount || 0
+        unanswered: unansweredCount || 0,
+        meetings: meetingsCount || 0
       })
 
     } catch (err) {
@@ -117,7 +143,7 @@ export default function Metrics() {
     if (!activeAgent) return
     const { data: agentData, error } = await supabase
       .from('agents')
-      .select('id, override_metrics, manual_sent, manual_replied, manual_unanswered')
+      .select('id, override_metrics, manual_sent, manual_replied, manual_unanswered, manual_meetings')
       .eq('slug', activeAgent)
       .single()
 
@@ -127,7 +153,8 @@ export default function Metrics() {
         override_metrics: agentData.override_metrics || false,
         manual_sent: agentData.manual_sent || 0,
         manual_replied: agentData.manual_replied || 0,
-        manual_unanswered: agentData.manual_unanswered || 0
+        manual_unanswered: agentData.manual_unanswered || 0,
+        manual_meetings: agentData.manual_meetings || 0
       })
     }
   }
@@ -166,6 +193,7 @@ export default function Metrics() {
   const displaySent = isOverridden ? dbAgent.manual_sent : crmMetrics.sent
   const displayReplied = isOverridden ? dbAgent.manual_replied : crmMetrics.replied
   const displayUnanswered = isOverridden ? dbAgent.manual_unanswered : crmMetrics.unanswered
+  const displayMeetings = isOverridden ? dbAgent.manual_meetings : crmMetrics.meetings
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
@@ -212,13 +240,13 @@ export default function Metrics() {
 
       {/* KPI Cards */}
       {loading && !isEditing ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
             <div key={i} className="h-28 rounded-2xl bg-surface-800/30 animate-pulse" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="col-span-full">
             {isEditing && (
               <label className="flex items-center gap-2 bg-surface-800/60 p-3 rounded-xl border border-surface-700/50 cursor-pointer w-max mb-2">
@@ -272,6 +300,20 @@ export default function Metrics() {
                <input type="number" disabled={!editForm.override_metrics} value={editForm.manual_unanswered} onChange={e => setEditForm({ ...editForm, manual_unanswered: parseInt(e.target.value) || 0 })} className="w-full bg-surface-950 border border-surface-700/50 rounded-lg px-3 py-1 text-2xl font-bold text-surface-100 disabled:opacity-50" />
              ) : (
                <div className="text-3xl font-bold text-surface-100">{displayUnanswered}</div>
+             )}
+          </div>
+          
+          <div className={`p-4 rounded-2xl border ${isEditing ? 'border-sky-500/50 bg-surface-800/60' : 'bg-surface-900/60 border-surface-800/60'}`}>
+             <div className="flex items-center justify-between mb-3">
+               <span className="text-sm font-medium text-surface-400">Reuniones Agendadas</span>
+               <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-sky-500/10">
+                 <CalendarDays size={16} className="text-sky-400" />
+               </div>
+             </div>
+             {isEditing ? (
+               <input type="number" disabled={!editForm.override_metrics} value={editForm.manual_meetings} onChange={e => setEditForm({ ...editForm, manual_meetings: parseInt(e.target.value) || 0 })} className="w-full bg-surface-950 border border-surface-700/50 rounded-lg px-3 py-1 text-2xl font-bold text-surface-100 disabled:opacity-50" />
+             ) : (
+               <div className="text-3xl font-bold text-surface-100">{displayMeetings}</div>
              )}
           </div>
         </div>

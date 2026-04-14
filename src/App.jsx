@@ -13,6 +13,8 @@ import Plans from './pages/Plans'
 import Users from './pages/Users'
 import FollowUps from './pages/FollowUps'
 import CurrencyConverter from './pages/CurrencyConverter'
+import Invoices from './pages/Invoices'
+import InvoiceForm from './pages/InvoiceForm'
 import { useLocation } from 'react-router-dom'
 
 function ProtectedRoute({ children }) {
@@ -61,6 +63,8 @@ export default function App() {
       <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
       <Route path="/followups" element={<ProtectedRoute><FollowUps /></ProtectedRoute>} />
       <Route path="/converter" element={<ProtectedRoute><CurrencyConverter /></ProtectedRoute>} />
+      <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
+      <Route path="/invoices/new" element={<ProtectedRoute><InvoiceForm /></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to={user?.allowed_views?.[0] || "/agents"} replace />} />
     </Routes>

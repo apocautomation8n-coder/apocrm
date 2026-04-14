@@ -17,6 +17,7 @@ import {
   Calculator,
   History,
   CheckSquare,
+  FileText,
 } from 'lucide-react'
 
 const navItems = [
@@ -27,6 +28,7 @@ const navItems = [
   { to: '/tasks',     icon: CheckSquare,   label: 'Tareas', badgeKey: 'tasks' },
   { to: '/calendar',  icon: CalendarDays,  label: 'Calendario' },
   { to: '/finance',   icon: DollarSign,    label: 'Finanzas' },
+  { to: '/invoices',  icon: FileText,      label: 'Facturas' },
   { to: '/users',     icon: Zap,           label: 'Usuarios' },
 ]
 
