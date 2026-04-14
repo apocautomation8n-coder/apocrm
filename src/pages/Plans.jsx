@@ -6,7 +6,7 @@ import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import Badge from '../components/ui/Badge'
-import { CreditCard, Users, TrendingUp, DollarSign, Plus, Pencil, Trash2 } from 'lucide-react'
+import { CreditCard, Users, TrendingUp, DollarSign, Plus, Pencil, Trash2, CheckCircle, Banknote } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const statusColors = { activo: 'green', pausado: 'yellow', cancelado: 'red' }
@@ -19,8 +19,13 @@ const currencies = [
 
 export default function Plans({ hideHeader = false }) {
   const [plans, setPlans] = useState([])
+  const [accounts, setAccounts] = useState([])
+  const [monthPayments, setMonthPayments] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showPayModal, setShowPayModal] = useState(false)
+  const [payingPlan, setPayingPlan] = useState(null)
+  const [payForm, setPayForm] = useState({ account_id: '', date: '' })
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({
     client_name: '', freelancer: '', monthly_fee: '', freelancer_fee: '0', expenses: '0', status: 'activo', notes: '', currency: 'USD', billing_day: '1'
@@ -28,13 +33,67 @@ export default function Plans({ hideHeader = false }) {
 
   const fetchPlans = async () => {
     setLoading(true)
-    const { data, error } = await supabase.from('monthly_plans').select('*').order('created_at')
+    
+    // 1. Fetch plans
+    const { data: plansData, error } = await supabase.from('monthly_plans').select('*').order('created_at')
+    
+    // 2. Fetch active month payments
+    const today = new Date()
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0]
+    
+    const { data: txData } = await supabase
+      .from('finance_transactions')
+      .select('*')
+      .eq('category', 'mensualidad')
+      .gte('date', firstDay)
+      .lte('date', lastDay)
+      
+    // 3. Fetch bank accounts
+    const { data: accData } = await supabase.from('bank_accounts').select('*').order('name')
+
     if (error) toast.error('Error cargando mantenimientos')
-    else setPlans(data)
+    else {
+      setPlans(plansData || [])
+      setMonthPayments(txData || [])
+      setAccounts(accData || [])
+    }
     setLoading(false)
   }
 
   useEffect(() => { fetchPlans() }, [])
+
+  const handlePayMonth = async () => {
+    if (!payForm.account_id) return toast.error('Selecciona una cuenta de destino')
+    
+    const amount = Number(payingPlan.monthly_fee);
+    
+    const payload = {
+      type: 'ingreso',
+      amount: amount,
+      currency: payingPlan.currency || 'USD',
+      description: `Cobro Mensualidad: ${payingPlan.client_name}`,
+      category: 'mensualidad',
+      date: payForm.date,
+      bank_account_id: payForm.account_id,
+      notes: payingPlan.id
+    }
+
+    const { error: txError } = await supabase.from('finance_transactions').insert(payload)
+    if (txError) return toast.error('Error registrando cobro')
+
+    const targetAccount = accounts.find(a => a.id === payForm.account_id)
+    if (targetAccount) {
+      await supabase.from('bank_accounts').update({ 
+         balance: Number(targetAccount.balance || 0) + amount 
+      }).eq('id', targetAccount.id)
+    }
+
+    toast.success('Cobro de mes registrado exitosamente y caja actualizada')
+    setShowPayModal(false)
+    setPayingPlan(null)
+    fetchPlans()
+  }
 
   const totalsByCurrency = useMemo(() => {
     return currencies.map(c => {
@@ -190,6 +249,7 @@ export default function Plans({ hideHeader = false }) {
                   <th className="px-5 py-3 text-right text-xs font-medium text-surface-400 uppercase tracking-wider">Gastos</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-surface-400 uppercase tracking-wider">Ganancia</th>
                   <th className="px-5 py-3 text-center text-xs font-medium text-surface-400 uppercase tracking-wider">Estado</th>
+                  <th className="px-5 py-3 text-center text-xs font-medium text-surface-400 uppercase tracking-wider">Mes Actual</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-surface-400 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
@@ -241,6 +301,36 @@ export default function Plans({ hideHeader = false }) {
                           <option value="pausado">Pausado</option>
                           <option value="cancelado">Cancelado</option>
                         </select>
+                      </td>
+                      <td className="px-5 py-3.5 text-center">
+                        {(() => {
+                           const isPaid = monthPayments.some(tx => tx.notes === plan.id)
+                           if (isPaid) {
+                             return (
+                               <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                                 <CheckCircle size={12} />
+                                 Pagado
+                               </span>
+                             )
+                           }
+                           
+                           return (
+                             <button
+                               onClick={() => {
+                                  setPayingPlan(plan)
+                                  setPayForm({
+                                    account_id: '',
+                                    date: new Date().toISOString().split('T')[0]
+                                  })
+                                  setShowPayModal(true)
+                               }}
+                               className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 bg-primary-500/20 text-primary-400 hover:bg-primary-500/30 rounded-lg transition-colors cursor-pointer"
+                             >
+                               <Banknote size={12} />
+                               Cobrar Mes
+                             </button>
+                           )
+                        })()}
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center justify-end gap-1">
@@ -304,7 +394,7 @@ export default function Plans({ hideHeader = false }) {
                         <span>{t.symbol}{t.colTotals.net_profit.toLocaleString()}</span>
                       </div>
                     </td>
-                    <td colSpan={2}></td>
+                    <td colSpan={3}></td>
                   </tr>
                 ))}
               </tbody>
@@ -343,6 +433,31 @@ export default function Plans({ hideHeader = false }) {
           </div>
         </div>
       </Modal>
+
+      {/* Pay Month Modal */}
+      {payingPlan && (
+        <Modal isOpen={showPayModal} onClose={() => { setShowPayModal(false); setPayingPlan(null) }} title={`Cobrar Mes - ${payingPlan.client_name}`}>
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-surface-800/50 border border-surface-700/50 text-sm text-surface-300">
+              <p>Se registrará el pago correspondiente a este mes por un total de <strong className="text-white">{payingPlan.currency} {Number(payingPlan.monthly_fee).toLocaleString()}</strong>.</p>
+            </div>
+            
+            <Input label="Fecha de Cobro" type="date" value={payForm.date} onChange={(e) => setPayForm(f => ({ ...f, date: e.target.value }))} />
+            
+            <Select label="Cuenta Destino" value={payForm.account_id} onChange={(e) => setPayForm(f => ({ ...f, account_id: e.target.value }))}>
+              <option value="">Seleccionar cuenta bancaria...</option>
+              {accounts.map(a => (
+                <option key={a.id} value={a.id}>{a.name} (Saldo: {a.balance})</option>
+              ))}
+            </Select>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-surface-800 md:mt-2">
+              <Button variant="secondary" onClick={() => { setShowPayModal(false); setPayingPlan(null) }}>Cancelar</Button>
+              <Button onClick={handlePayMonth} className="px-8">Registrar Cobro</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

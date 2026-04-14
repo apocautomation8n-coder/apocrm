@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DollarSign, CreditCard, TrendingDown, BarChart3, Wallet, Calculator, TrendingUp } from 'lucide-react'
+import { DollarSign, CreditCard, TrendingDown, BarChart3, Wallet, Calculator, TrendingUp, FileText } from 'lucide-react'
 import FinanceDashboard from './FinanceDashboard'
 import FinanceProjects from './FinanceProjects'
 import FinanceIncomes from './FinanceIncomes'
@@ -7,9 +7,11 @@ import Plans from './Plans'
 import FinanceExpenses from './FinanceExpenses'
 import FinanceCash from './FinanceCash'
 import CurrencyConverter from './CurrencyConverter'
+import MonthlyReportNotification from '../components/finance/MonthlyReportNotification'
 
 export default function Finance() {
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [showManualReport, setShowManualReport] = useState(false)
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -23,13 +25,25 @@ export default function Finance() {
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
+      <MonthlyReportNotification forceOpen={showManualReport} onCloseManual={() => setShowManualReport(false)} />
+      
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-surface-100 flex items-center gap-3">
-          <DollarSign size={24} className="text-primary-400" />
-          Finanzas
-        </h1>
-        <p className="text-sm text-surface-400 mt-1">Gestión integral de ingresos, mantenimientos y egresos</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-surface-100 flex items-center gap-3">
+            <DollarSign size={24} className="text-primary-400" />
+            Finanzas
+          </h1>
+          <p className="text-sm text-surface-400 mt-1">Gestión integral de ingresos, mantenimientos y egresos</p>
+        </div>
+        
+        <button 
+          onClick={() => setShowManualReport(true)}
+          className="flex items-center gap-2 px-3 py-2 bg-surface-800/80 hover:bg-surface-700/80 text-surface-200 text-sm font-medium rounded-xl border border-surface-700 transition-colors cursor-pointer"
+        >
+          <FileText size={16} className="text-primary-400" />
+          <span className="hidden sm:inline">Reporte del Mes</span>
+        </button>
       </div>
 
       {/* Tabs Navigation */}
