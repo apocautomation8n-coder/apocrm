@@ -81,22 +81,34 @@ export default function Metrics() {
         if (!repliedSet.has(cid)) unansweredCount++
       })
 
-      // Scheduled Meetings (Contacts in messagedSet with "Reunion Agendada" label)
+      // All contacts of this agent (both inbound and outbound)
+      let allContactsSet = new Set()
+      const { data: allAgentContacts } = await supabase
+        .from('messages')
+        .select('contact_id')
+        .eq('agent_id', agent.id)
+      
+      if (allAgentContacts) {
+        allAgentContacts.forEach(m => allContactsSet.add(m.contact_id))
+      }
+
+      // Scheduled Meetings (All contacts with "Reunion Agendada" label)
       let meetingsCount = 0
-      if (messagedSet.size > 0) {
+      if (allContactsSet.size > 0) {
         // Find label
         const { data: labelData } = await supabase
           .from('labels')
           .select('id')
-          .eq('name', 'Reunion Agendada')
-          .single()
+          .ilike('name', '%reunion agendada%')
+          .limit(1)
+          .maybeSingle()
 
         if (labelData) {
           const { data: clData } = await supabase
             .from('contact_labels')
             .select('contact_id')
             .eq('label_id', labelData.id)
-            .in('contact_id', Array.from(messagedSet))
+            .in('contact_id', Array.from(allContactsSet))
           
           if (clData) {
             meetingsCount = clData.length
