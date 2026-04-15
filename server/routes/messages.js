@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import supabase from '../supabaseAdmin.js'
-import { sendSuccess, sendError, safeDb } from '../utils.js'
+import { sendSuccess, sendError, safeDb, findOrCreateContact } from '../utils.js'
 
 const router = Router()
 
@@ -13,20 +13,15 @@ router.post('/inbound', async (req, res) => {
       return sendError(res, 'phone and agent_slug are required', 400)
     }
 
-    // 1. Find or create contact using upsert
-    const { data: contact, error: contactErr } = await safeDb(() => 
-      supabase
-        .from('contacts')
-        .upsert(
-          { phone, name: name || null },
-          { onConflict: 'phone' }
-        )
-        .select('id')
-        .single()
-    )
+    // 1. Smart find-or-create: searches ALL phone variants, auto-merges duplicates
+    const { contact, error: contactErr, merged } = await findOrCreateContact(phone, name)
 
     if (contactErr || !contact) {
       return sendError(res, 'Failed to handle contact', 500)
+    }
+
+    if (merged) {
+      console.log(`[INBOUND] Auto-merged duplicate contacts for phone: ${phone}`)
     }
 
     // 2. Find agent by slug
@@ -86,11 +81,9 @@ router.get('/inbound', async (req, res) => {
       return sendError(res, 'phone and agent_slug are required', 400)
     }
     
-    // 1. Upsert contact
-    const { data: contact, error: cErr } = await safeDb(() => 
-      supabase.from('contacts').upsert({ phone, name: name || null }, { onConflict: 'phone' }).select('id').single()
-    )
-    if (cErr) throw cErr
+    // 1. Smart find-or-create with phone variant matching
+    const { contact, error: cErr } = await findOrCreateContact(phone, name)
+    if (cErr || !contact) throw cErr || new Error('Failed to handle contact')
 
     // 2. Find agent
     const { data: agent, error: aErr } = await safeDb(() => 
@@ -119,20 +112,15 @@ router.post('/bot-outbound', async (req, res) => {
       return sendError(res, 'phone and agent_slug are required', 400)
     }
 
-    // 1. Find or create contact using upsert
-    const { data: contact, error: contactErr } = await safeDb(() => 
-      supabase
-        .from('contacts')
-        .upsert(
-          { phone },
-          { onConflict: 'phone' }
-        )
-        .select('id')
-        .single()
-    )
+    // 1. Smart find-or-create with phone variant matching
+    const { contact, error: contactErr, merged } = await findOrCreateContact(phone, null)
 
     if (contactErr || !contact) {
       return sendError(res, 'Failed to handle contact for bot message', 500)
+    }
+
+    if (merged) {
+      console.log(`[BOT-OUTBOUND] Auto-merged duplicate contacts for phone: ${phone}`)
     }
 
     // 2. Find agent by slug

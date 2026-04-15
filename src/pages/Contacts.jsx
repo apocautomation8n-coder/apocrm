@@ -34,7 +34,21 @@ export default function Contacts() {
   const filtered = contacts.filter(c => {
     if (!search) return true
     const s = search.toLowerCase()
-    return c.name?.toLowerCase().includes(s) || c.phone?.includes(s)
+    // Name match
+    if (c.name?.toLowerCase().includes(s)) return true
+    // Direct phone match
+    if (c.phone?.includes(search)) return true
+    // Fuzzy phone variant match (handles 549 vs 54)
+    const searchDigits = search.replace(/\D/g, '')
+    if (searchDigits.length >= 6) {
+      const variants = getPhoneVariants(searchDigits)
+      const contactDigits = c.phone?.replace(/\D/g, '') || ''
+      return variants.some(v => {
+        const vDigits = v.replace(/\D/g, '')
+        return contactDigits.includes(vDigits) || vDigits.includes(contactDigits)
+      })
+    }
+    return false
   })
 
   const handleSave = async () => {

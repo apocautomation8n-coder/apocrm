@@ -340,14 +340,31 @@ export default function OutboundAgents() {
               />
             </div>
             
-            {contactSearch.trim() && (
+            {contactSearch.trim() && (() => {
+              const searchLower = contactSearch.toLowerCase()
+              // Generate phone variants from the search term for fuzzy matching
+              const searchDigits = contactSearch.replace(/\D/g, '')
+              const searchVariants = searchDigits.length >= 6 ? getPhoneVariants(searchDigits) : []
+              
+              const matchingContacts = contacts.filter(c => {
+                // Name match (case insensitive)
+                if (c.name?.toLowerCase().includes(searchLower)) return true
+                // Direct phone match
+                if (c.phone?.includes(contactSearch)) return true
+                // Variant phone match (fuzzy: 549... matches 54... and vice versa)
+                if (searchVariants.length > 0) {
+                  const contactDigits = c.phone?.replace(/\D/g, '') || ''
+                  return searchVariants.some(v => {
+                    const vDigits = v.replace(/\D/g, '')
+                    return contactDigits.includes(vDigits) || vDigits.includes(contactDigits)
+                  })
+                }
+                return false
+              })
+
+              return (
               <div className="max-h-40 overflow-y-auto rounded-lg border border-surface-700/30 bg-surface-800/40 mt-1 divide-y divide-surface-700/20">
-                {contacts
-                  .filter(c => 
-                    c.name?.toLowerCase().includes(contactSearch.toLowerCase()) || 
-                    c.phone?.includes(contactSearch)
-                  )
-                  .map(c => (
+                {matchingContacts.map(c => (
                     <button
                       key={c.id}
                       onClick={() => {
@@ -362,16 +379,14 @@ export default function OutboundAgents() {
                     </button>
                   ))
                 }
-                {contacts.filter(c => 
-                    c.name?.toLowerCase().includes(contactSearch.toLowerCase()) || 
-                    c.phone?.includes(contactSearch)
-                  ).length === 0 && (
+                {matchingContacts.length === 0 && (
                   <div className="px-3 py-4 text-center text-xs text-surface-500">
                     No se encontraron contactos.
                   </div>
                 )}
               </div>
-            )}
+              )
+            })()}
           </div>
 
           <div className="relative py-2">

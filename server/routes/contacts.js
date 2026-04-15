@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import supabase from '../supabaseAdmin.js'
-import { sendSuccess, sendError, safeDb } from '../utils.js'
+import { sendSuccess, sendError, safeDb, findOrCreateContact, getPhoneVariants, normalizePhone } from '../utils.js'
 
 const router = Router()
 
@@ -13,20 +13,15 @@ router.post('/', async (req, res) => {
       return sendError(res, 'phone is required', 400)
     }
 
-    // Use upsert to create or update contact name
-    const { data: contact, error: contactErr } = await safeDb(() => 
-      supabase
-        .from('contacts')
-        .upsert(
-          { phone, name: name || null },
-          { onConflict: 'phone' }
-        )
-        .select('id')
-        .single()
-    )
+    // Smart find-or-create with phone variant matching
+    const { contact, error: contactErr, merged } = await findOrCreateContact(phone, name)
     
-    if (contactErr) {
+    if (contactErr || !contact) {
       return sendError(res, 'Failed to handle contact', 500)
+    }
+
+    if (merged) {
+      console.log(`[CONTACTS] Auto-merged duplicate contacts for phone: ${phone}`)
     }
 
     return sendSuccess(res, { contactId: contact.id })
@@ -39,15 +34,16 @@ router.post('/', async (req, res) => {
 router.get('/check/:phone', async (req, res) => {
   try {
     const { phone } = req.laxData
-    const { data: contact } = await safeDb(() => 
+    const variants = getPhoneVariants(phone)
+    
+    const { data: contacts } = await safeDb(() => 
       supabase
         .from('contacts')
         .select('id')
-        .eq('phone', phone)
-        .single()
+        .in('phone', variants)
     )
 
-    return sendSuccess(res, { exists: !!contact })
+    return sendSuccess(res, { exists: !!(contacts && contacts.length > 0) })
   } catch (err) {
     return sendError(res, err)
   }
@@ -57,19 +53,21 @@ router.get('/check/:phone', async (req, res) => {
 router.get('/:phone', async (req, res) => {
   try {
     const { phone } = req.laxData
-    const { data: contact, error } = await safeDb(() => 
+    const variants = getPhoneVariants(phone)
+    
+    const { data: contacts, error } = await safeDb(() => 
       supabase
         .from('contacts')
         .select('*')
-        .eq('phone', phone)
-        .single()
+        .in('phone', variants)
     )
 
-    if (error || !contact) {
+    if (error || !contacts || contacts.length === 0) {
       return sendError(res, 'Contact not found', 404)
     }
 
-    return sendSuccess(res, contact)
+    // Return first match (if there were duplicates, findOrCreateContact will merge them next time)
+    return sendSuccess(res, contacts[0])
   } catch (err) {
     return sendError(res, err)
   }
@@ -79,15 +77,17 @@ router.get('/:phone', async (req, res) => {
 router.get('/check-conversation/:phone', async (req, res) => {
   try {
     const { phone } = req.laxData
+    const variants = getPhoneVariants(phone)
 
-    // 1. Find contact
-    const { data: contact } = await safeDb(() => 
+    // 1. Find contact by any phone variant
+    const { data: contacts } = await safeDb(() => 
       supabase
         .from('contacts')
         .select('id, bot_enabled')
-        .eq('phone', phone)
-        .single()
+        .in('phone', variants)
     )
+
+    const contact = contacts?.[0]
 
     if (!contact) {
       return sendSuccess(res, { exists: false, hasMessages: false })
@@ -121,19 +121,16 @@ router.post('/open-conversation', async (req, res) => {
       return sendError(res, 'phone is required', 400)
     }
 
-    // 1. Find or create contact using upsert
-    const { data: contact, error: contactErr } = await safeDb(() => 
-      supabase
-        .from('contacts')
-        .upsert(
-          { phone, name: name || null, bot_enabled: true },
-          { onConflict: 'phone' }
-        )
-        .select('id')
-        .single()
-    )
+    // Smart find-or-create with phone variant matching
+    const { contact, error: contactErr, merged } = await findOrCreateContact(phone, name)
 
-    if (contactErr) throw contactErr
+    if (contactErr || !contact) {
+      return sendError(res, 'Failed to handle contact', 500)
+    }
+
+    if (merged) {
+      console.log(`[OPEN-CONVERSATION] Auto-merged duplicate contacts for phone: ${phone}`)
+    }
 
     return sendSuccess(res, { contactId: contact.id })
   } catch (err) {
@@ -142,3 +139,4 @@ router.post('/open-conversation', async (req, res) => {
 })
 
 export default router
+
