@@ -273,8 +273,9 @@ export default function Security() {
         }
       } else {
         // First time — create a sentinel to validate future logins
+        const { data: { user } } = await supabase.auth.getUser()
         const { encryptedValue, iv, salt } = await encryptValue('__sentinel__', masterInput)
-        await supabase.from('credential_vaults').insert({
+        const { error: sentinelError } = await supabase.from('credential_vaults').insert({
           client_name: '__system__',
           category: 'general',
           label: SENTINEL_LABEL,
@@ -283,7 +284,9 @@ export default function Security() {
           iv, salt,
           url: null,
           notes: 'Sentinel — do not delete',
+          created_by: user?.id || null,
         })
+        if (sentinelError) throw sentinelError
       }
 
       // Password OK — unlock
@@ -312,23 +315,39 @@ export default function Security() {
   // ── Save credential ────────────────────────
   const handleSave = async (e) => {
     e.preventDefault()
-    if (!form.value.trim()) return
+
+    // If editing and no new value provided, we just update text fields
+    const hasNewValue = form.value.trim().length > 0
+    if (!hasNewValue && !editingCred) {
+      alert('Por favor, ingresá una contraseña o valor.')
+      return
+    }
+
     setSaving(true)
     try {
-      const { encryptedValue, iv, salt } = await encryptValue(form.value, masterPassword.current)
+      const { data: { user } } = await supabase.auth.getUser()
 
+      // 1. Prepare payload with basic fields
       const payload = {
         client_name: form.client_name.trim(),
         category: form.category,
         label: form.label.trim(),
         username: form.username.trim() || null,
-        encrypted_value: encryptedValue,
-        iv, salt,
         url: form.url.trim() || null,
         notes: form.notes.trim() || null,
         updated_at: new Date().toISOString(),
+        created_by: user?.id || null,
       }
 
+      // 2. Add encrypted fields if a new value was provided
+      if (hasNewValue) {
+        const { encryptedValue, iv, salt } = await encryptValue(form.value, masterPassword.current)
+        payload.encrypted_value = encryptedValue
+        payload.iv = iv
+        payload.salt = salt
+      }
+
+      // 3. Perform DB operation
       if (editingCred) {
         const { error } = await supabase
           .from('credential_vaults')
@@ -347,7 +366,12 @@ export default function Security() {
       fetchCredentials()
     } catch (err) {
       console.error('Error saving credential:', err)
-      alert('Error al guardar: ' + err.message)
+      const fullError = `
+        Mensaje: ${err.message || 'Error desconocido'}
+        Detalles: ${err.details || 'ninguno'}
+        Sugerencia: ${err.hint || 'ninguna'}
+      `.trim()
+      alert('Error al guardar:\n' + fullError)
     } finally {
       setSaving(false)
     }
