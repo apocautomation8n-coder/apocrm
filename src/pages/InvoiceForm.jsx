@@ -128,6 +128,9 @@ export default function InvoiceForm() {
     
     const invoiceData = {
       ...form,
+      due_date: form.due_date || null,
+      payment_method: form.payment_method || null,
+      notes: form.notes || null,
       subtotal,
       iva_amount,
       total
@@ -170,8 +173,8 @@ export default function InvoiceForm() {
       navigate('/invoices')
       
     } catch (e) {
-      console.error(e)
-      toast.error('Error al guardar factura')
+      console.error('Save invoice error:', e)
+      toast.error(e.message || 'Error al guardar factura')
     }
     setLoading(false)
   }
