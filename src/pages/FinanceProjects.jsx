@@ -6,7 +6,7 @@ import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import Badge from '../components/ui/Badge'
-import { DollarSign, TrendingUp, TrendingDown, Plus, Pencil, Trash2, Filter, Archive } from 'lucide-react'
+import { DollarSign, TrendingUp, TrendingDown, Plus, Pencil, Trash2, Filter, Archive, Power } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import toast from 'react-hot-toast'
 
@@ -84,7 +84,8 @@ export default function FinanceProjects({ hideHeader = false }) {
   const totals = useMemo(() => {
     const res = {}
     currencies.forEach(c => {
-      const perCurr = filtered.filter(t => (t.currency || 'ARS') === c.code)
+      // Exclude 'desactivado' projects from KPI calculations (same logic as expenses)
+      const perCurr = filtered.filter(t => (t.currency || 'ARS') === c.code && t.status !== 'desactivado')
       res[c.code] = {
         totalBudget: perCurr.reduce((s, t) => s + Number(t.budget || 0), 0),
         totalCollected: perCurr.reduce((s, t) => s + Number(t.collected || 0), 0),
@@ -146,8 +147,22 @@ export default function FinanceProjects({ hideHeader = false }) {
       
     if (error) toast.error('Error cambiando el estado')
     else {
-      toast.success(`Proyecto ${newStatus}`)
+      toast.success(`Proyecto ${newStatus === 'cerrado' ? 'cerrado' : 'reabierto'}`)
       fetchTransactions()
+    }
+  }
+
+  const handleTogglePower = async (id, currentStatus) => {
+    const newStatus = currentStatus === 'desactivado' ? 'activo' : 'desactivado'
+    const { error } = await supabase
+      .from('finance_transactions')
+      .update({ status: newStatus })
+      .eq('id', id)
+
+    if (error) toast.error('Error cambiando el estado')
+    else {
+      setTransactions(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t))
+      toast.success(newStatus === 'desactivado' ? 'Proyecto desactivado del dashboard' : 'Proyecto activado')
     }
   }
 
@@ -304,6 +319,7 @@ export default function FinanceProjects({ hideHeader = false }) {
         >
           <option value="activo">Proyectos Activos</option>
           <option value="cerrado">Proyectos Cerrados</option>
+          <option value="desactivado">Desactivados</option>
           <option value="all">Historial Completo</option>
         </select>
 
@@ -370,7 +386,9 @@ export default function FinanceProjects({ hideHeader = false }) {
               </thead>
               <tbody>
                 {filtered.map(t => (
-                  <tr key={t.id} className={`border-b border-surface-800/30 hover:bg-surface-800/30 transition-colors ${t.status === 'cerrado' ? 'opacity-50' : ''}`}>
+                  <tr key={t.id} className={`border-b border-surface-800/30 hover:bg-surface-800/30 transition-colors ${
+                    t.status === 'desactivado' ? 'opacity-30' : t.status === 'cerrado' ? 'opacity-50' : ''
+                  }`}>
                     <td className="px-4 py-3.5">
                       <div className="flex flex-col gap-1">
                         <Badge color={t.status === 'activo' ? "primary" : "neutral"}>{t.section?.toUpperCase() || 'OTRO'}</Badge>
@@ -416,13 +434,24 @@ export default function FinanceProjects({ hideHeader = false }) {
                     <td className="px-4 py-3.5">
                       <div className="flex items-center justify-end gap-1">
                         <button 
-                          title={t.status === 'activo' ? "Cerrar Proyecto" : "Reabrir Proyecto"}
-                          onClick={() => handleToggleStatus(t.id, t.status)} 
-                          className={`p-1.5 rounded-lg transition-all cursor-pointer ${t.status === 'activo' ? 'text-surface-500 hover:text-emerald-400 hover:bg-emerald-500/10' : 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20'}`}
+                          title={t.status === 'desactivado' ? 'Activar proyecto' : 'Desactivar del dashboard'}
+                          onClick={() => handleTogglePower(t.id, t.status)}
+                          className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                            t.status === 'desactivado'
+                              ? 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20'
+                              : 'text-surface-500 hover:text-emerald-400 hover:bg-emerald-500/10'
+                          }`}
+                        >
+                          <Power size={15} />
+                        </button>
+                        <button 
+                          title={t.status === 'cerrado' ? 'Reabrir Proyecto' : 'Cerrar Proyecto'}
+                          onClick={() => handleToggleStatus(t.id, t.status === 'desactivado' ? 'activo' : t.status)} 
+                          className={`p-1.5 rounded-lg transition-all cursor-pointer ${(t.status === 'cerrado') ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/20' : 'text-surface-500 hover:text-amber-400 hover:bg-amber-500/10'}`}
                         >
                           <Archive size={15} />
                         </button>
-                        <button title="Editar" onClick={() => openEditModal(t)} className="p-1.5 rounded-lg text-surface-500 hover:text-amber-400 hover:bg-amber-500/10 cursor-pointer">
+                        <button title="Editar" onClick={() => openEditModal(t)} className="p-1.5 rounded-lg text-surface-500 hover:text-blue-400 hover:bg-blue-500/10 cursor-pointer">
                           <Pencil size={15} />
                         </button>
                         <button title="Eliminar" onClick={() => handleDelete(t.id)} className="p-1.5 rounded-lg text-surface-500 hover:text-red-400 hover:bg-red-500/10 cursor-pointer">
@@ -489,6 +518,7 @@ export default function FinanceProjects({ hideHeader = false }) {
              <Select label="Estado del proyecto" value={form.status} onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))}>
                <option value="activo">Activo (Pendiente cobrar o en curso)</option>
                <option value="cerrado">Cerrado (Terminado y cobrado)</option>
+               <option value="desactivado">Desactivado (Oculto del dashboard)</option>
              </Select>
           </div>
 
