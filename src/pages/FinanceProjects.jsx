@@ -54,6 +54,7 @@ export default function FinanceProjects({ hideHeader = false }) {
     const { data, error } = await supabase
       .from('finance_transactions')
       .select('*')
+      .not('budget', 'is', null)
       .order('date', { ascending: false })
     if (error) toast.error('Error cargando transacciones')
     else setTransactions(data)
@@ -334,6 +335,15 @@ export default function FinanceProjects({ hideHeader = false }) {
           <option value="all">Todas las monedas</option>
           {currencies.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
         </select>
+
+        {hideHeader && (
+          <div className="ml-auto">
+            <Button onClick={openNewModal}>
+              <Plus size={16} />
+              Agregar Proyecto
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Table */}

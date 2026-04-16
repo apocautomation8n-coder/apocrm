@@ -186,26 +186,59 @@ export default function FinanceIncomes({ hideHeader = false }) {
         </div>
       )}
 
-      {/* KPI Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard 
-          label="Total Cobrado (Filtro)" 
-          value={`$${filtered.reduce((s, i) => s + Number(i.amount), 0).toLocaleString()}`} 
-          icon={TrendingUp} 
-          color="success" 
-        />
-        <StatCard 
-          label="Proyectos Activos" 
-          value={projects.length} 
-          icon={DollarSign} 
-          color="primary" 
-        />
-        <StatCard 
-          label="Cuentas con Saldo" 
-          value={accounts.filter(a => a.balance > 0).length} 
-          icon={Wallet} 
-          color="accent" 
-        />
+      {/* KPI Cards (Breakdown by currency) */}
+      <div className="space-y-4">
+        {currencies.map(c => {
+          const perCurr = filtered.filter(i => (i.currency || 'USD') === c.code)
+          const totalCobrado = perCurr.reduce((s, i) => s + Number(i.amount || 0), 0)
+          const count = perCurr.length
+
+          // Skip currencies with no data unless there's a active filter
+          if (totalCobrado === 0 && count === 0) return null
+
+          return (
+            <div key={c.code} className="space-y-2">
+              <div className="flex items-center gap-2 px-1">
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                  c.code === 'USD' ? 'bg-emerald-500' : 
+                  c.code === 'USD_ARS' ? 'bg-teal-500' :
+                  c.code === 'EUR' ? 'bg-amber-400' : 
+                  'bg-primary-500'
+                }`} />
+                <span className="text-xs font-bold text-surface-400 uppercase tracking-wider">Ingresos en {c.label}</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <StatCard 
+                  label="Total Cobrado" 
+                  value={
+                    <div className={`flex items-baseline gap-1 ${
+                      c.code === 'USD' || c.code === 'USD_ARS' ? 'text-emerald-400' : 
+                      c.code === 'EUR' ? 'text-amber-400' : 
+                      'text-primary-400'
+                    }`}>
+                       <span className="text-[10px] font-bold opacity-70">{c.code}</span>
+                       <span>{c.symbol}{totalCobrado.toLocaleString()}</span>
+                    </div>
+                  } 
+                  icon={TrendingUp} 
+                  color="success" 
+                />
+                <StatCard 
+                  label="Cantidad de Cobros" 
+                  value={count} 
+                  icon={DollarSign} 
+                  color="primary" 
+                />
+                <StatCard 
+                  label="Cuentas con Saldo" 
+                  value={accounts.filter(a => a.balance > 0).length} 
+                  icon={Wallet} 
+                  color="accent" 
+                />
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {/* Filters */}
