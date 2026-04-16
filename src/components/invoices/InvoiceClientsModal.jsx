@@ -105,7 +105,7 @@ export default function InvoiceClientsModal({ isOpen, onClose, onClientSelect })
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Clientes de Facturación">
+    <Modal isOpen={isOpen} onClose={onClose} title="Clientes de Facturación" size="xl">
       <div className="flex gap-6 h-[500px]">
         {/* Lista */}
         <div className="w-1/2 flex flex-col border-r border-surface-700 pr-4 overflow-y-auto">
