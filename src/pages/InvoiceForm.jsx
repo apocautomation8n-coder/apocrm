@@ -76,9 +76,33 @@ export default function InvoiceForm() {
         }
       }
     } else {
-      // New Invoice - use next number from settings
+      // New Invoice - compute next number from BOTH settings and actual DB max
       if(setts) {
-        setForm(f => ({...f, number: `${setts.invoice_prefix}-${String(setts.next_number).padStart(4, '0')}`}))
+        // Query the real max number from existing invoices to avoid duplicates
+        const { data: maxData } = await supabase
+          .from('invoices')
+          .select('number')
+          .like('number', `${setts.invoice_prefix}-%`)
+          .order('number', { ascending: false })
+          .limit(1)
+        
+        let nextNum = setts.next_number || 1
+        if (maxData && maxData.length > 0) {
+          // Parse the numeric part from the last invoice number
+          const lastNumStr = maxData[0].number.replace(`${setts.invoice_prefix}-`, '')
+          const lastNum = parseInt(lastNumStr, 10)
+          if (!isNaN(lastNum) && lastNum >= nextNum) {
+            nextNum = lastNum + 1
+          }
+        }
+
+        // If settings are out of sync, update them
+        if (nextNum > (setts.next_number || 1)) {
+          await supabase.from('invoice_settings').update({ next_number: nextNum }).eq('id', setts.id)
+          setSettings(s => s ? { ...s, next_number: nextNum } : s)
+        }
+
+        setForm(f => ({...f, number: `${setts.invoice_prefix}-${String(nextNum).padStart(4, '0')}`}))
       }
     }
     
@@ -155,12 +179,42 @@ export default function InvoiceForm() {
       } else {
         // Insert Invoice
         const { data: newInv, error: invErr } = await supabase.from('invoices').insert([invoiceData]).select().single()
+        
+        // Handle duplicate number conflict (23505)
+        if (invErr && invErr.code === '23505') {
+          // Auto-bump: find the actual max and increment
+          const prefix = settings?.invoice_prefix || 'FAC'
+          const { data: maxData } = await supabase
+            .from('invoices')
+            .select('number')
+            .like('number', `${prefix}-%`)
+            .order('number', { ascending: false })
+            .limit(1)
+          
+          let nextNum = (settings?.next_number || 1) + 1
+          if (maxData && maxData.length > 0) {
+            const lastNum = parseInt(maxData[0].number.replace(`${prefix}-`, ''), 10)
+            if (!isNaN(lastNum) && lastNum >= nextNum) nextNum = lastNum + 1
+          }
+          
+          const newNumber = `${prefix}-${String(nextNum).padStart(4, '0')}`
+          setForm(f => ({ ...f, number: newNumber }))
+          if (settings) {
+            await supabase.from('invoice_settings').update({ next_number: nextNum + 1 }).eq('id', settings.id)
+            setSettings(s => s ? { ...s, next_number: nextNum + 1 } : s)
+          }
+          setLoading(false)
+          return toast.error(`Número duplicado. Se actualizó al siguiente disponible: ${newNumber}. Inténtalo de nuevo.`)
+        }
+        
         if(invErr) throw invErr
         createdInvoiceId = newInv.id
 
-        // Auto increment settings
+        // Auto increment settings after successful insert
         if(settings) {
-          await supabase.from('invoice_settings').update({ next_number: settings.next_number + 1 }).eq('id', settings.id)
+          const nextNum = (settings.next_number || 1) + 1
+          await supabase.from('invoice_settings').update({ next_number: nextNum }).eq('id', settings.id)
+          setSettings(s => s ? { ...s, next_number: nextNum } : s)
         }
       }
 
