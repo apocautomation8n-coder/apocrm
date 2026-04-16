@@ -13,6 +13,7 @@ const PAGE_TITLES = {
   '/finance': 'Finanzas',
   '/plans': 'Mensualidades',
   '/converter': 'Conversión de Capital',
+  '/security': 'Bóveda de Credenciales',
   '/users': 'Usuarios'
 }
 

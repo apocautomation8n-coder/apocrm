@@ -18,6 +18,7 @@ import {
   History,
   CheckSquare,
   FileText,
+  ShieldCheck,
 } from 'lucide-react'
 
 const navItems = [
@@ -29,6 +30,7 @@ const navItems = [
   { to: '/calendar',  icon: CalendarDays,  label: 'Calendario' },
   { to: '/finance',   icon: DollarSign,    label: 'Finanzas' },
   { to: '/invoices',  icon: FileText,      label: 'Facturas' },
+  { to: '/security',  icon: ShieldCheck,   label: 'Seguridad' },
   { to: '/users',     icon: Zap,           label: 'Usuarios' },
 ]
 

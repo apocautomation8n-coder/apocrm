@@ -19,6 +19,7 @@ const VIEW_LABELS = {
   '/invoices': 'Facturas',
   '/plans': 'Mensualidades',
   '/converter': 'Conversión de Capital',
+  '/security': 'Seguridad',
   '/users': 'Usuarios'
 }
 
