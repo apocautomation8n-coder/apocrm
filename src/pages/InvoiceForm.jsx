@@ -86,17 +86,23 @@ export default function InvoiceForm() {
   }
 
   // Derived calculations
-  const calcSubtotal = () => items.reduce((acc, current) => acc + (current.quantity * current.unit_price), 0)
-  const calcTotal = () => {
-    const sub = calcSubtotal()
-    const desc = parseFloat(form.discount_amount) || 0
-    const ivaAmt = ((sub - desc) * (parseFloat(form.iva_percent) || 0)) / 100
-    return (sub - desc) + ivaAmt
+  const calcSubtotal = () => {
+    const val = items.reduce((acc, current) => acc + ((parseFloat(current.quantity)||0) * (parseFloat(current.unit_price)||0)), 0)
+    return isNaN(val) ? 0 : val
   }
   const calcIvaAmt = () => {
     const sub = calcSubtotal()
     const desc = parseFloat(form.discount_amount) || 0
-    return ((sub - desc) * (parseFloat(form.iva_percent) || 0)) / 100
+    const iva = parseFloat(form.iva_percent) || 0
+    const val = ((sub - desc) * iva) / 100
+    return isNaN(val) ? 0 : val
+  }
+  const calcTotal = () => {
+    const sub = calcSubtotal()
+    const desc = parseFloat(form.discount_amount) || 0
+    const ivaAmt = calcIvaAmt()
+    const val = (sub - desc) + ivaAmt
+    return isNaN(val) ? 0 : val
   }
 
   const handleItemChange = (index, field, value) => {
@@ -173,7 +179,7 @@ export default function InvoiceForm() {
       navigate('/invoices')
       
     } catch (e) {
-      console.error('Save invoice error:', e)
+      console.error('Save invoice error object:', JSON.stringify(e, null, 2))
       toast.error(e.message || 'Error al guardar factura')
     }
     setLoading(false)
