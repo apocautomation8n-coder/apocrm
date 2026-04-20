@@ -169,6 +169,7 @@ export default function Users() {
             <thead>
               <tr className="bg-surface-800/40 border-b border-surface-800/60">
                 <th className="px-6 py-4 text-xs font-semibold text-surface-400 uppercase tracking-wider">Usuario</th>
+                <th className="px-6 py-4 text-xs font-semibold text-surface-400 uppercase tracking-wider">Último Acceso</th>
                 <th className="px-6 py-4 text-xs font-semibold text-surface-400 uppercase tracking-wider">Vistas Permitidas</th>
                 <th className="px-6 py-4 text-xs font-semibold text-surface-400 uppercase tracking-wider text-right">Acciones</th>
               </tr>
@@ -218,6 +219,20 @@ export default function Users() {
                         )}
                         <div className="text-sm text-surface-400">{user.email}</div>
                       </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-surface-300">
+                      {user.last_login 
+                        ? new Date(user.last_login).toLocaleString('es-AR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                        : 'Nunca'
+                      }
                     </div>
                   </td>
                   <td className="px-6 py-4">

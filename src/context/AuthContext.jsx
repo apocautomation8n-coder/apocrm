@@ -34,6 +34,12 @@ export function AuthProvider({ children }) {
             allowed_views: sessionUser.email === 'apoc@apocautomation.site' ? allViews : allViews.filter(v => v !== '/users')
           })
         } else {
+          // Update last login
+          await supabase
+            .from('profiles')
+            .update({ last_login: new Date().toISOString() })
+            .eq('id', sessionUser.id)
+
           // Ensure main account always has all views
           const userProfile = { ...sessionUser, ...profile }
           if (sessionUser.email === 'apoc@apocautomation.site') {
