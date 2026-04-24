@@ -223,6 +223,7 @@ export default function ResourceDrive() {
               <button 
                 onClick={() => setCurrentFolderId(folder.id)}
                 className={`p-2 rounded-lg hover:bg-surface-800 transition-colors ${currentFolderId === folder.id ? 'text-primary-400 font-bold bg-primary-500/10' : 'text-surface-300'}`}
+                title={folder.name}
               >
                 {folder.name}
               </button>
@@ -268,7 +269,7 @@ export default function ResourceDrive() {
                   <div className="p-2 bg-primary-500/10 rounded-lg text-primary-400 shrink-0">
                     <Folder size={20} />
                   </div>
-                  <span className="font-medium text-surface-100 truncate">{folder.name}</span>
+                  <span className="font-medium text-surface-100 truncate" title={folder.name}>{folder.name}</span>
                 </div>
                 <button 
                   onClick={(e) => handleDeleteFolder(folder.id, e)}

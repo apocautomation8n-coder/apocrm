@@ -219,7 +219,7 @@ export default function PortfolioProjects({ hideHeader = false }) {
               {/* Content */}
               <div className="p-5 flex-1 flex flex-col relative">
                 <div className="flex justify-between items-start mb-2 pr-6">
-                  <h3 className="text-lg font-bold text-surface-100 line-clamp-1">{project.name}</h3>
+                  <h3 className="text-lg font-bold text-surface-100 line-clamp-1" title={project.name}>{project.name}</h3>
                 </div>
 
                 <div className="absolute top-4 right-4">
