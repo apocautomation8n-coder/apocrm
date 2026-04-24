@@ -179,7 +179,7 @@ export default function Metrics({ hideHeader = false }) {
       .select('*', { count: 'exact', head: true })
       .eq('agent_id', agent.id)
       .eq('direction', 'outbound')
-      .ilike('body', `%${videoUrl}%`)
+      .ilike('content', `%${videoUrl}%`)
 
     if (!error) {
       setVideoLinkCount(count || 0)
@@ -191,7 +191,7 @@ export default function Metrics({ hideHeader = false }) {
     if (!activeAgent) return
     const { data: agentData, error } = await supabase
       .from('agents')
-      .select('id, override_metrics, manual_sent, manual_replied, manual_unanswered, manual_meetings')
+      .select('id, override_metrics, manual_sent, manual_replied, manual_unanswered, manual_followups')
       .eq('slug', activeAgent)
       .single()
 
@@ -202,7 +202,7 @@ export default function Metrics({ hideHeader = false }) {
         manual_sent: agentData.manual_sent || 0,
         manual_replied: agentData.manual_replied || 0,
         manual_unanswered: agentData.manual_unanswered || 0,
-        manual_meetings: agentData.manual_meetings || 0
+        manual_followups: agentData.manual_followups || 0
       })
     }
   }
@@ -242,7 +242,7 @@ export default function Metrics({ hideHeader = false }) {
   const displaySent = isOverridden ? dbAgent.manual_sent : crmMetrics.sent
   const displayReplied = isOverridden ? dbAgent.manual_replied : crmMetrics.replied
   const displayUnanswered = isOverridden ? dbAgent.manual_unanswered : crmMetrics.unanswered
-  const displayMeetings = isOverridden ? dbAgent.manual_meetings : crmMetrics.meetings
+  const displayMeetings = isOverridden ? dbAgent.manual_followups : crmMetrics.meetings
 
   return (
     <div className={`${hideHeader ? '' : 'p-6'} space-y-6 animate-fade-in`}>
@@ -361,7 +361,7 @@ export default function Metrics({ hideHeader = false }) {
                </div>
              </div>
              {isEditing ? (
-               <input type="number" disabled={!editForm.override_metrics} value={editForm.manual_meetings} onChange={e => setEditForm({ ...editForm, manual_meetings: parseInt(e.target.value) || 0 })} className="w-full bg-surface-950 border border-surface-700/50 rounded-lg px-3 py-1 text-2xl font-bold text-surface-100 disabled:opacity-50" />
+               <input type="number" disabled={!editForm.override_metrics} value={editForm.manual_followups} onChange={e => setEditForm({ ...editForm, manual_followups: parseInt(e.target.value) || 0 })} className="w-full bg-surface-950 border border-surface-700/50 rounded-lg px-3 py-1 text-2xl font-bold text-surface-100 disabled:opacity-50" />
              ) : (
                <div className="text-3xl font-bold text-surface-100">{displayMeetings}</div>
              )}
