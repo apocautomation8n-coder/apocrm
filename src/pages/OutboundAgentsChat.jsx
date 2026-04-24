@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAgents, useConversations, useContacts, deleteConversationByContact, normalizePhone, getPhoneVariants, mergeContacts } from '../hooks/useMessages'
 import { useRealtime } from '../hooks/useRealtime'
 import ConversationList from '../components/chat/ConversationList'
