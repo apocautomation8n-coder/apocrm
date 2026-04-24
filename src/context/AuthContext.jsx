@@ -25,7 +25,7 @@ export function AuthProvider({ children }) {
           .eq('id', sessionUser.id)
           .maybeSingle()
 
-        const allViews = ['/agents', '/contacts', '/pipeline', '/tasks', '/calendar', '/followups', '/finance', '/invoices/new', '/plans', '/converter', '/portfolio', '/security']
+        const allViews = ['/agents', '/contacts', '/pipeline', '/tasks', '/calendar', '/followups', '/finance', '/invoices/new', '/plans', '/converter', '/resources', '/security']
         
         if (error || !profile) {
           // If profile doesn't exist, provide default permissions

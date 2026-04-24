@@ -10,7 +10,7 @@ import Calendar from './pages/Calendar'
 import Finance from './pages/Finance'
 import InvoiceForm from './pages/InvoiceForm'
 import Security from './pages/Security'
-import PortfolioProjects from './pages/PortfolioProjects'
+import Resources from './pages/Resources'
 import { useLocation } from 'react-router-dom'
 
 function ProtectedRoute({ children }) {
@@ -56,7 +56,7 @@ export default function App() {
       <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
       <Route path="/finance" element={<ProtectedRoute><Finance /></ProtectedRoute>} />
       <Route path="/invoices/new" element={<ProtectedRoute><InvoiceForm /></ProtectedRoute>} />
-      <Route path="/portfolio" element={<ProtectedRoute><PortfolioProjects /></ProtectedRoute>} />
+      <Route path="/resources" element={<ProtectedRoute><Resources /></ProtectedRoute>} />
       <Route path="/security" element={<ProtectedRoute><Security /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to={user?.allowed_views?.[0] || "/agents"} replace />} />
     </Routes>

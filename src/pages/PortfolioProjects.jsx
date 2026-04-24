@@ -6,7 +6,7 @@ import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 
-export default function PortfolioProjects() {
+export default function PortfolioProjects({ hideHeader = false }) {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -150,7 +150,8 @@ export default function PortfolioProjects() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className={`${hideHeader ? '' : 'p-8'} max-w-7xl mx-auto space-y-6`}>
+      {!hideHeader && (
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-surface-100">Portafolio de Proyectos</h1>
@@ -161,6 +162,16 @@ export default function PortfolioProjects() {
           Nuevo Proyecto
         </Button>
       </div>
+      )}
+      
+      {hideHeader && (
+        <div className="flex justify-end">
+          <Button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="flex items-center gap-2">
+            <Plus size={18} />
+            Nuevo Proyecto
+          </Button>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center items-center h-64">

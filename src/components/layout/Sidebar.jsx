@@ -13,7 +13,7 @@ import {
   ChevronRight,
   CheckSquare,
   ShieldCheck,
-  MonitorPlay
+  FolderOpen
 } from 'lucide-react'
 
 const navItems = [
@@ -23,7 +23,7 @@ const navItems = [
   { to: '/tasks',     icon: CheckSquare,   label: 'Tareas', badgeKey: 'tasks' },
   { to: '/calendar',  icon: CalendarDays,  label: 'Calendario' },
   { to: '/finance',   icon: DollarSign,    label: 'Finanzas' },
-  { to: '/portfolio', icon: MonitorPlay,   label: 'Portafolio' },
+  { to: '/resources', icon: FolderOpen,    label: 'Recursos' },
   { to: '/security',  icon: ShieldCheck,   label: 'Seguridad' },
 ]
 
