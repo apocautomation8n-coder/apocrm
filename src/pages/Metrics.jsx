@@ -81,12 +81,16 @@ export default function Metrics({ hideHeader = false }) {
         .eq('direction', 'outbound')
       
       const messagedSet = new Set(messagedData?.map(m => m.contact_id) || [])
-      
-      // Unanswered = Messaged contacts who NEVER replied to this agent
-      // We calculate this as: contacts in messagedSet that ARE NOT in repliedSet
+      // Calculate properly intersected values
+      let answeredCount = 0
       let unansweredCount = 0
+      
       messagedSet.forEach(cid => {
-        if (!repliedSet.has(cid)) unansweredCount++
+        if (repliedSet.has(cid)) {
+          answeredCount++
+        } else {
+          unansweredCount++
+        }
       })
 
       // All contacts of this agent (both inbound and outbound)
@@ -126,7 +130,7 @@ export default function Metrics({ hideHeader = false }) {
 
       setCrmMetrics({
         sent: messagedSet.size || 0,
-        replied: repliedCount || 0,
+        replied: answeredCount || 0,
         unanswered: unansweredCount || 0,
         meetings: meetingsCount || 0
       })
