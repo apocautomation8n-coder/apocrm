@@ -12,7 +12,7 @@ import InvoiceClientsModal from '../components/invoices/InvoiceClientsModal'
 import { pdf } from '@react-pdf/renderer'
 import InvoicePDF from '../components/invoices/InvoicePDF'
 
-export default function Invoices() {
+export default function Invoices({ hideHeader = false }) {
   const [invoices, setInvoices] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -106,9 +106,10 @@ export default function Invoices() {
   }
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in relative max-w-[1400px] mx-auto">
+    <div className={`${hideHeader ? '' : 'p-6'} space-y-6 animate-fade-in relative max-w-[1400px] mx-auto`}>
       
       {/* Header */}
+      {!hideHeader && (
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-surface-100 flex items-center gap-3">
@@ -130,6 +131,20 @@ export default function Invoices() {
           </Button>
         </div>
       </div>
+      )}
+      {hideHeader && (
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="secondary" onClick={() => setShowClients(true)}>
+            <Users size={16} /> Clientes
+          </Button>
+          <Button variant="secondary" onClick={() => setShowSettings(true)}>
+            <Settings size={16} /> Emisor
+          </Button>
+          <Button className="bg-[#7a9e82] hover:bg-[#6b8c72] text-white ml-2" onClick={() => navigate('/invoices/new')}>
+            <Plus size={16} /> Nueva Factura
+          </Button>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

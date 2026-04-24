@@ -7,6 +7,7 @@ import Plans from './Plans'
 import FinanceExpenses from './FinanceExpenses'
 import FinanceCash from './FinanceCash'
 import CurrencyConverter from './CurrencyConverter'
+import Invoices from './Invoices'
 import MonthlyReportNotification from '../components/finance/MonthlyReportNotification'
 
 export default function Finance() {
@@ -21,6 +22,7 @@ export default function Finance() {
     { id: 'plans', label: 'Mensualidades', icon: CreditCard },
     { id: 'expenses', label: 'Egresos', icon: TrendingDown },
     { id: 'converter', label: 'Conversión', icon: Calculator },
+    { id: 'invoices', label: 'Facturas', icon: FileText },
   ]
 
   return (
@@ -77,6 +79,7 @@ export default function Finance() {
         {activeTab === 'plans' && <Plans hideHeader={true} />}
         {activeTab === 'expenses' && <FinanceExpenses hideHeader={true} />}
         {activeTab === 'converter' && <CurrencyConverter hideHeader={true} />}
+        {activeTab === 'invoices' && <Invoices hideHeader={true} />}
       </div>
     </div>
   )

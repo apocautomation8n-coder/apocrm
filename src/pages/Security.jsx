@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ShieldCheck, Lock, Unlock, Plus, Eye, EyeOff, Copy, Check,
   Trash2, Pencil, Search, X, Key, Globe, User, FileText,
-  Tag, AlertTriangle, RefreshCw, ChevronDown, Save, ExternalLink,
+  Tag, AlertTriangle, RefreshCw, ChevronDown, Save, ExternalLink, Users as UsersIcon,
 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { encryptValue, decryptValue, getPasswordStrength } from '../lib/crypto'
@@ -10,6 +10,7 @@ import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
+import UsersPage from './Users'
 
 // ─────────────────────────────────────────────
 // Constants
@@ -228,6 +229,14 @@ export default function Security() {
     username: '', value: '', url: '', notes: ''
   })
   const [showFormPass, setShowFormPass] = useState(false)
+
+  // Tab state for Security section (Bóveda vs Usuarios)
+  const [securityTab, setSecurityTab] = useState('vault')
+
+  const securityTabs = [
+    { id: 'vault', label: 'Bóveda de Credenciales', icon: Key },
+    { id: 'users', label: 'Usuarios', icon: UsersIcon },
+  ]
 
   // ── Fetch credentials ──────────────────────
   const fetchCredentials = useCallback(async () => {
@@ -507,15 +516,15 @@ export default function Security() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
 
-      {/* Header */}
+      {/* Header with tabs */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
             <ShieldCheck size={20} className="text-emerald-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-surface-50">Bóveda de Credenciales</h1>
-            <p className="text-surface-400 text-sm">{credentials.length} credencial{credentials.length !== 1 ? 'es' : ''} almacenada{credentials.length !== 1 ? 's' : ''} · AES-256-GCM</p>
+            <h1 className="text-2xl font-bold text-surface-50">Seguridad</h1>
+            <p className="text-surface-400 text-sm">Bóveda de credenciales y gestión de usuarios</p>
           </div>
         </div>
 
@@ -524,10 +533,12 @@ export default function Security() {
             <Lock size={16} />
             Bloquear
           </Button>
-          <Button variant="primary" onClick={openNew} className="flex items-center gap-2">
-            <Plus size={18} />
-            Nueva Credencial
-          </Button>
+          {securityTab === 'vault' && (
+            <Button variant="primary" onClick={openNew} className="flex items-center gap-2">
+              <Plus size={18} />
+              Nueva Credencial
+            </Button>
+          )}
         </div>
       </div>
 
@@ -537,233 +548,266 @@ export default function Security() {
         <span className="text-emerald-400 text-xs font-medium">Bóveda desbloqueada · Cifrado activo</span>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500" />
-          <input
-            type="text"
-            placeholder="Buscar por label, cliente, usuario..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-surface-800/80 border border-surface-700/50 text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 text-sm"
-          />
-          {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-500 hover:text-surface-300 cursor-pointer">
-              <X size={14} />
-            </button>
-          )}
-        </div>
-
-        <div className="relative">
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="pl-3 pr-8 py-2 rounded-xl bg-surface-800/80 border border-surface-700/50 text-surface-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 appearance-none cursor-pointer"
+      {/* Tabs Navigation */}
+      <div className="flex border-b border-surface-800/60">
+        {securityTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setSecurityTab(tab.id)}
+            className={`
+              flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all relative whitespace-nowrap cursor-pointer
+              ${securityTab === tab.id 
+                ? 'text-primary-400' 
+                : 'text-surface-500 hover:text-surface-300'}
+            `}
           >
-            <option value="all">Todas las categorías</option>
-            {CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
-            ))}
-          </select>
-          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
-        </div>
-
-        {uniqueClients.length > 0 && (
-          <div className="relative">
-            <select
-              value={filterClient}
-              onChange={(e) => setFilterClient(e.target.value)}
-              className="pl-3 pr-8 py-2 rounded-xl bg-surface-800/80 border border-surface-700/50 text-surface-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 appearance-none cursor-pointer"
-            >
-              <option value="all">Todos los clientes</option>
-              {uniqueClients.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
-          </div>
-        )}
+            <tab.icon size={16} />
+            {tab.label}
+            {securityTab === tab.id && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500 animate-fade-in" />
+            )}
+          </button>
+        ))}
       </div>
 
-      {/* Table */}
-      <Card className="overflow-hidden border-surface-800/60 bg-surface-900/50 backdrop-blur-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-surface-800/40 border-b border-surface-800/60">
-                {['Credencial', 'Cliente', 'Usuario', 'Contraseña / Valor', 'URL', ''].map((h) => (
-                  <th key={h} className="px-4 py-3 text-[11px] font-semibold text-surface-400 uppercase tracking-wider whitespace-nowrap">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center">
-                    <div className="flex flex-col items-center gap-2 text-surface-400">
-                      <RefreshCw size={20} className="animate-spin" />
-                      <span className="text-sm">Cargando credenciales...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center">
-                    <div className="flex flex-col items-center gap-3 text-surface-500">
-                      <Key size={40} className="text-surface-700" />
-                      <div>
-                        <p className="text-sm font-medium text-surface-400">
-                          {search || filterCategory !== 'all' || filterClient !== 'all'
-                            ? 'No hay resultados para la búsqueda'
-                            : 'No hay credenciales guardadas'}
-                        </p>
-                        {!search && filterCategory === 'all' && filterClient === 'all' && (
-                          <p className="text-xs mt-1">Hacé clic en "Nueva Credencial" para comenzar</p>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((cred) => (
-                  <CredentialRow
-                    key={cred.id}
-                    cred={cred}
-                    masterPassword={masterPassword.current}
-                    onEdit={openEdit}
-                    onDelete={handleDelete}
-                  />
-                ))
+      {/* Tab Content */}
+      {securityTab === 'vault' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500" />
+              <input
+                type="text"
+                placeholder="Buscar por label, cliente, usuario..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-surface-800/80 border border-surface-700/50 text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 text-sm"
+              />
+              {search && (
+                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-500 hover:text-surface-300 cursor-pointer">
+                  <X size={14} />
+                </button>
               )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+            </div>
 
-      {/* Add / Edit Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => { setIsModalOpen(false); resetForm() }}
-        title={editingCred ? 'Editar Credencial' : 'Nueva Credencial'}
-        size="lg"
-      >
-        <form onSubmit={handleSave} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Cliente / Proyecto"
-              placeholder="Ej: MundoLaser"
-              value={form.client_name}
-              onChange={(e) => setForm({ ...form, client_name: e.target.value })}
-              required
-              icon={User}
-            />
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-surface-300">Categoría</label>
+            <div className="relative">
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="pl-3 pr-8 py-2 rounded-xl bg-surface-800/80 border border-surface-700/50 text-surface-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 appearance-none cursor-pointer"
+              >
+                <option value="all">Todas las categorías</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+            </div>
+
+            {uniqueClients.length > 0 && (
               <div className="relative">
                 <select
-                  value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  className="w-full pl-3 pr-8 py-2.5 rounded-xl bg-surface-800/80 border border-surface-700/50 text-surface-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 appearance-none cursor-pointer"
+                  value={filterClient}
+                  onChange={(e) => setFilterClient(e.target.value)}
+                  className="pl-3 pr-8 py-2 rounded-xl bg-surface-800/80 border border-surface-700/50 text-surface-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 appearance-none cursor-pointer"
                 >
-                  {CATEGORIES.map((c) => (
-                    <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
+                  <option value="all">Todos los clientes</option>
+                  {uniqueClients.map((c) => (
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
                 <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
               </div>
-            </div>
+            )}
           </div>
 
-          <Input
-            label="Etiqueta / Nombre"
-            placeholder="Ej: Admin WordPress, cPanel, API Stripe..."
-            value={form.label}
-            onChange={(e) => setForm({ ...form, label: e.target.value })}
-            required
-            icon={Tag}
-          />
+          {/* Table */}
+          <Card className="overflow-hidden border-surface-800/60 bg-surface-900/50 backdrop-blur-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-surface-800/40 border-b border-surface-800/60">
+                    {['Credencial', 'Cliente', 'Usuario', 'Contraseña / Valor', 'URL', ''].map((h) => (
+                      <th key={h} className="px-4 py-3 text-[11px] font-semibold text-surface-400 uppercase tracking-wider whitespace-nowrap">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={6} className="py-16 text-center">
+                        <div className="flex flex-col items-center gap-2 text-surface-400">
+                          <RefreshCw size={20} className="animate-spin" />
+                          <span className="text-sm">Cargando credenciales...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-16 text-center">
+                        <div className="flex flex-col items-center gap-3 text-surface-500">
+                          <Key size={40} className="text-surface-700" />
+                          <div>
+                            <p className="text-sm font-medium text-surface-400">
+                              {search || filterCategory !== 'all' || filterClient !== 'all'
+                                ? 'No hay resultados para la búsqueda'
+                                : 'No hay credenciales guardadas'}
+                            </p>
+                            {!search && filterCategory === 'all' && filterClient === 'all' && (
+                              <p className="text-xs mt-1">Hacé clic en "Nueva Credencial" para comenzar</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map((cred) => (
+                      <CredentialRow
+                        key={cred.id}
+                        cred={cred}
+                        masterPassword={masterPassword.current}
+                        onEdit={openEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
 
-          <Input
-            label="Usuario / Email"
-            placeholder="usuario@ejemplo.com"
-            value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
-            icon={User}
-          />
-
-          {/* Password with strength meter */}
-          <div className="space-y-1">
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-surface-300">
-                Contraseña / Valor {editingCred && <span className="text-surface-500 font-normal">(dejá vacío para no cambiarla)</span>}
-              </label>
-              <div className="relative">
-                <Key size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500" />
-                <input
-                  type={showFormPass ? 'text' : 'password'}
-                  value={form.value}
-                  onChange={(e) => setForm({ ...form, value: e.target.value })}
-                  placeholder={editingCred ? '(sin cambios)' : 'Ingresá el valor a cifrar'}
-                  required={!editingCred}
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-surface-800/80 border border-surface-700/50 text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/50 transition-all text-sm"
+          {/* Add / Edit Modal */}
+          <Modal
+            isOpen={isModalOpen}
+            onClose={() => { setIsModalOpen(false); resetForm() }}
+            title={editingCred ? 'Editar Credencial' : 'Nueva Credencial'}
+            size="lg"
+          >
+            <form onSubmit={handleSave} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Cliente / Proyecto"
+                  placeholder="Ej: MundoLaser"
+                  value={form.client_name}
+                  onChange={(e) => setForm({ ...form, client_name: e.target.value })}
+                  required
+                  icon={User}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowFormPass(!showFormPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-500 hover:text-surface-300 cursor-pointer"
-                >
-                  {showFormPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-surface-300">Categoría</label>
+                  <div className="relative">
+                    <select
+                      value={form.category}
+                      onChange={(e) => setForm({ ...form, category: e.target.value })}
+                      className="w-full pl-3 pr-8 py-2.5 rounded-xl bg-surface-800/80 border border-surface-700/50 text-surface-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 appearance-none cursor-pointer"
+                    >
+                      {CATEGORIES.map((c) => (
+                        <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+                  </div>
+                </div>
               </div>
-            </div>
-            <StrengthBar password={form.value} />
-          </div>
 
-          <Input
-            label="URL (opcional)"
-            placeholder="https://ejemplo.com/wp-admin"
-            value={form.url}
-            onChange={(e) => setForm({ ...form, url: e.target.value })}
-            icon={Globe}
-          />
+              <Input
+                label="Etiqueta / Nombre"
+                placeholder="Ej: Admin WordPress, cPanel, API Stripe..."
+                value={form.label}
+                onChange={(e) => setForm({ ...form, label: e.target.value })}
+                required
+                icon={Tag}
+              />
 
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-surface-300">Notas (opcional)</label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              placeholder="Información adicional..."
-              rows={2}
-              className="w-full px-4 py-2.5 rounded-xl bg-surface-800/80 border border-surface-700/50 text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 transition-all text-sm resize-none"
-            />
-          </div>
+              <Input
+                label="Usuario / Email"
+                placeholder="usuario@ejemplo.com"
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                icon={User}
+              />
 
-          <div className="flex gap-3 pt-2">
-            <Button
-              variant="outline"
-              type="button"
-              className="flex-1"
-              onClick={() => { setIsModalOpen(false); resetForm() }}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="primary"
-              type="submit"
-              disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2"
-            >
-              {saving
-                ? <><RefreshCw size={16} className="animate-spin" /> Cifrando...</>
-                : <><Save size={16} /> {editingCred ? 'Actualizar' : 'Guardar Cifrado'}</>
-              }
-            </Button>
-          </div>
-        </form>
-      </Modal>
+              {/* Password with strength meter */}
+              <div className="space-y-1">
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-surface-300">
+                    Contraseña / Valor {editingCred && <span className="text-surface-500 font-normal">(dejá vacío para no cambiarla)</span>}
+                  </label>
+                  <div className="relative">
+                    <Key size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500" />
+                    <input
+                      type={showFormPass ? 'text' : 'password'}
+                      value={form.value}
+                      onChange={(e) => setForm({ ...form, value: e.target.value })}
+                      placeholder={editingCred ? '(sin cambios)' : 'Ingresá el valor a cifrar'}
+                      required={!editingCred}
+                      className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-surface-800/80 border border-surface-700/50 text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/50 transition-all text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowFormPass(!showFormPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-500 hover:text-surface-300 cursor-pointer"
+                    >
+                      {showFormPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+                <StrengthBar password={form.value} />
+              </div>
+
+              <Input
+                label="URL (opcional)"
+                placeholder="https://ejemplo.com/wp-admin"
+                value={form.url}
+                onChange={(e) => setForm({ ...form, url: e.target.value })}
+                icon={Globe}
+              />
+
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-surface-300">Notas (opcional)</label>
+                <textarea
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  placeholder="Información adicional..."
+                  rows={2}
+                  className="w-full px-4 py-2.5 rounded-xl bg-surface-800/80 border border-surface-700/50 text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 transition-all text-sm resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  type="button"
+                  className="flex-1"
+                  onClick={() => { setIsModalOpen(false); resetForm() }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="primary"
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 flex items-center justify-center gap-2"
+                >
+                  {saving
+                    ? <><RefreshCw size={16} className="animate-spin" /> Cifrando...</>
+                    : <><Save size={16} /> {editingCred ? 'Actualizar' : 'Guardar Cifrado'}</>
+                  }
+                </Button>
+              </div>
+            </form>
+          </Modal>
+        </div>
+      )}
+
+      {securityTab === 'users' && (
+        <div className="animate-fade-in">
+          <UsersPage hideHeader={true} />
+        </div>
+      )}
     </div>
   )
 }

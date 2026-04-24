@@ -4,36 +4,27 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
 import {
   MessageSquare,
-  BarChart3,
   Users,
   Kanban,
   CalendarDays,
   DollarSign,
-  CreditCard,
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Zap,
-  Calculator,
-  History,
   CheckSquare,
-  FileText,
   ShieldCheck,
   MonitorPlay
 } from 'lucide-react'
 
 const navItems = [
   { to: '/agents',    icon: MessageSquare, label: 'Agentes Outbound', badgeKey: 'unread' },
-  { to: '/metrics',   icon: BarChart3,     label: 'Métricas' },
   { to: '/contacts',  icon: Users,         label: 'Contactos' },
   { to: '/pipeline',  icon: Kanban,        label: 'Pipeline' },
   { to: '/tasks',     icon: CheckSquare,   label: 'Tareas', badgeKey: 'tasks' },
   { to: '/calendar',  icon: CalendarDays,  label: 'Calendario' },
   { to: '/finance',   icon: DollarSign,    label: 'Finanzas' },
-  { to: '/invoices',  icon: FileText,      label: 'Facturas' },
   { to: '/portfolio', icon: MonitorPlay,   label: 'Portafolio' },
   { to: '/security',  icon: ShieldCheck,   label: 'Seguridad' },
-  { to: '/users',     icon: Zap,           label: 'Usuarios' },
 ]
 
 export default function Sidebar() {

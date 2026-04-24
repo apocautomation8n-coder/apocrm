@@ -9,7 +9,7 @@ import toast from 'react-hot-toast'
 
 // Dynamic agents will be fetched from the database
 
-export default function Metrics() {
+export default function Metrics({ hideHeader = false }) {
   const [agents, setAgents] = useState([])
   const [activeAgent, setActiveAgent] = useState('')
   const [isEditing, setIsEditing] = useState(false)
@@ -208,8 +208,9 @@ export default function Metrics() {
   const displayMeetings = isOverridden ? dbAgent.manual_meetings : crmMetrics.meetings
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
+    <div className={`${hideHeader ? '' : 'p-6'} space-y-6 animate-fade-in`}>
       {/* Header */}
+      {!hideHeader && (
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-surface-100">Métricas</h1>
@@ -241,7 +242,7 @@ export default function Metrics() {
           )}
         </div>
       </div>
-
+      )}
       {/* Agent selector */}
       <Tabs 
         tabs={agents.map(a => ({ value: a.slug, label: a.name }))} 

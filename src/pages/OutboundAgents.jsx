@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { MessageSquare, History } from 'lucide-react'
+import { MessageSquare, History, BarChart3 } from 'lucide-react'
 import OutboundAgentsChat from './OutboundAgentsChat'
 import FollowUps from './FollowUps'
+import Metrics from './Metrics'
 
 export default function OutboundAgents() {
   const [activeTab, setActiveTab] = useState('chat')
@@ -9,6 +10,7 @@ export default function OutboundAgents() {
   const tabs = [
     { id: 'chat', label: 'Chats & Agentes', icon: MessageSquare },
     { id: 'followups', label: 'Seguimientos', icon: History },
+    { id: 'metrics', label: 'Métricas', icon: BarChart3 },
   ]
 
   return (
@@ -27,7 +29,7 @@ export default function OutboundAgents() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  flex items-center gap-2 px-2 pb-3 text-sm font-medium transition-all relative
+                  flex items-center gap-2 px-2 pb-3 text-sm font-medium transition-all relative cursor-pointer
                   ${activeTab === tab.id 
                     ? 'text-primary-400' 
                     : 'text-surface-500 hover:text-surface-300'}
@@ -54,6 +56,11 @@ export default function OutboundAgents() {
         {activeTab === 'followups' && (
           <div className="absolute inset-0 overflow-y-auto px-6 py-4">
             <FollowUps hideHeader={true} />
+          </div>
+        )}
+        {activeTab === 'metrics' && (
+          <div className="absolute inset-0 overflow-y-auto px-6 py-4">
+            <Metrics hideHeader={true} />
           </div>
         )}
       </div>

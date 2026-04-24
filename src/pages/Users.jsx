@@ -9,22 +9,19 @@ import { supabase } from '../lib/supabaseClient'
 
 const VIEW_LABELS = {
   '/agents': 'Agentes Outbound',
-  '/metrics': 'Métricas',
   '/contacts': 'Contactos',
   '/pipeline': 'Pipeline',
   '/tasks': 'Tareas',
   '/calendar': 'Calendario',
   '/followups': 'Seguimientos',
   '/finance': 'Finanzas',
-  '/invoices': 'Facturas',
   '/plans': 'Mensualidades',
   '/converter': 'Conversión de Capital',
   '/portfolio': 'Portafolio',
-  '/security': 'Seguridad',
-  '/users': 'Usuarios'
+  '/security': 'Seguridad'
 }
 
-export default function Users() {
+export default function Users({ hideHeader = false }) {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -147,7 +144,8 @@ export default function Users() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className={`${hideHeader ? '' : 'p-6'} space-y-6 max-w-7xl mx-auto`}>
+      {!hideHeader && (
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-surface-50">Gestión de Usuarios</h1>
@@ -162,6 +160,19 @@ export default function Users() {
           Nuevo Usuario
         </Button>
       </div>
+      )}
+      {hideHeader && (
+        <div className="flex justify-end">
+          <Button 
+            variant="primary" 
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus size={18} />
+            Nuevo Usuario
+          </Button>
+        </div>
+      )}
 
       <Card className="overflow-hidden border-surface-800/60 bg-surface-900/50 backdrop-blur-sm">
         <div className="overflow-x-auto">
