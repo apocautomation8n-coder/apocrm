@@ -222,7 +222,7 @@ export default function PortfolioProjects({ hideHeader = false }) {
                   <h3 className="text-lg font-bold text-surface-100 line-clamp-1">{project.name}</h3>
                   
                   {/* Instant Tooltip */}
-                  <div className="absolute left-0 -top-8 bg-surface-800 text-white text-[10px] px-2 py-1 rounded border border-surface-700 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-all duration-75 whitespace-nowrap z-50 shadow-2xl">
+                  <div className="absolute left-0 bottom-full mb-2 w-max max-w-[300px] bg-surface-950 text-white text-[11px] px-3 py-1.5 rounded-lg border border-surface-700 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-all duration-100 z-50 shadow-2xl whitespace-normal break-words">
                     {project.name}
                   </div>
                 </div>

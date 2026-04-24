@@ -272,7 +272,7 @@ export default function ResourceDrive() {
                   <span className="font-medium text-surface-100 truncate">{folder.name}</span>
                   
                   {/* Instant Tooltip */}
-                  <div className="absolute left-0 -top-8 bg-surface-800 text-white text-[10px] px-2 py-1 rounded border border-surface-700 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-all duration-75 whitespace-nowrap z-50 shadow-2xl">
+                  <div className="absolute left-0 bottom-full mb-2 w-max max-w-[300px] bg-surface-950 text-white text-[11px] px-3 py-1.5 rounded-lg border border-surface-700 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-all duration-100 z-50 shadow-2xl whitespace-normal break-words">
                     {folder.name}
                   </div>
                 </div>
@@ -312,7 +312,7 @@ export default function ResourceDrive() {
                     </p>
                     
                     {/* Instant Tooltip */}
-                    <div className="absolute left-0 -top-8 bg-surface-800 text-white text-[10px] px-2 py-1 rounded border border-surface-700 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-all duration-75 whitespace-nowrap z-50 shadow-2xl">
+                    <div className="absolute left-0 bottom-full mb-2 w-max max-w-[300px] bg-surface-950 text-white text-[11px] px-3 py-1.5 rounded-lg border border-surface-700 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-all duration-100 z-50 shadow-2xl whitespace-normal break-words">
                       {file.name}
                     </div>
                   </div>
