@@ -198,7 +198,7 @@ export default function Sidebar() {
       {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3.5 top-24 w-7 h-7 rounded-full bg-surface-900 border border-surface-700 flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 hover:border-surface-600 hover:scale-110 shadow-lg transition-all cursor-pointer z-20 group"
+        className="absolute -right-3.5 top-24 w-7 h-7 rounded-full bg-surface-900 border border-surface-700 flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 hover:border-surface-600 hover:scale-110 shadow-lg transition-all cursor-pointer z-50 group"
       >
         {collapsed ? (
           <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />

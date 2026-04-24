@@ -39,10 +39,21 @@ export default function OutboundAgents() {
   // Sync selectedContact with latest data from conversations (important for bot_enabled status)
   const currentContact = conversations.find(c => c.contact?.id === selectedContact?.id)?.contact || selectedContact
 
-  // Realtime: refresh conversations on new messages
+  // Realtime: refresh conversations on new/updated messages (bubbles chat to top)
   useRealtime('messages', null, () => {
     refetch()
   })
+
+  // Also listen for UPDATE events (e.g. is_read changes) 
+  useEffect(() => {
+    const channel = supabase
+      .channel('messages-updates-reorder')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, () => {
+        refetch()
+      })
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [refetch])
 
   const filteredConversations = conversations.filter(conv => {
     const s = search.toLowerCase()
