@@ -4,7 +4,7 @@ import OutboundAgentsChat from './OutboundAgentsChat'
 import FollowUps from './FollowUps'
 import Metrics from './Metrics'
 
-export default function OutboundAgents() {
+export default function OutboundAgents({ hideHeader = false }) {
   const [activeTab, setActiveTab] = useState('chat')
 
   const tabs = [
@@ -18,10 +18,12 @@ export default function OutboundAgents() {
       {/* Header & Tabs */}
       <div className="shrink-0 bg-surface-900/50 border-b border-surface-800/60 flex items-center justify-between px-6 pt-4">
         <div className="flex items-center gap-6">
-          <h1 className="text-xl font-bold text-surface-100 flex items-center gap-2 mb-3">
-            <MessageSquare size={20} className="text-primary-400" />
-            Outbound Hub
-          </h1>
+          {!hideHeader && (
+            <h1 className="text-xl font-bold text-surface-100 flex items-center gap-2 mb-3">
+              <MessageSquare size={20} className="text-primary-400" />
+              Outbound Hub
+            </h1>
+          )}
 
           <div className="flex gap-4">
             {tabs.map((tab) => (

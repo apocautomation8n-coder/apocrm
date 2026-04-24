@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-  { to: '/agents',    icon: MessageSquare, label: 'Agentes Outbound', badgeKey: 'unread' },
+  { to: '/agents',    icon: MessageSquare, label: 'Agentes', badgeKey: 'unread' },
   { to: '/contacts',  icon: Users,         label: 'Contactos' },
   { to: '/pipeline',  icon: Kanban,        label: 'Pipeline' },
   { to: '/tasks',     icon: CheckSquare,   label: 'Tareas', badgeKey: 'tasks' },

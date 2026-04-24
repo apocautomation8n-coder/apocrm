@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Layout from './components/layout/Layout'
 import Login from './pages/Login'
-import OutboundAgents from './pages/OutboundAgents'
+import Agents from './pages/Agents'
 import Contacts from './pages/Contacts'
 import Pipeline from './pages/Pipeline'
 import Tasks from './pages/Tasks'
@@ -49,7 +49,7 @@ export default function App() {
         path="/login"
         element={user && !loading ? <Navigate to={user.allowed_views?.[0] || "/agents"} replace /> : <Login />}
       />
-      <Route path="/agents" element={<ProtectedRoute><OutboundAgents /></ProtectedRoute>} />
+      <Route path="/agents" element={<ProtectedRoute><Agents /></ProtectedRoute>} />
       <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
       <Route path="/pipeline" element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
       <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
