@@ -39,7 +39,7 @@ export default function Tasks() {
   return (
     <div className="h-full flex flex-col min-w-0 bg-surface-950/20">
       {/* Sub-Header / Toolbar */}
-      <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-surface-800/40 bg-surface-900/10">
+      <div className="sticky top-0 z-20 px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-surface-800/40 bg-surface-950/90 backdrop-blur-xl">
         <div className="flex items-center gap-6">
           {/* View Toggle */}
           <div className="flex p-1 rounded-xl bg-surface-800/40 border border-surface-700/30">
