@@ -39,8 +39,8 @@ export default function Tasks() {
   return (
     <div className="h-full flex flex-col min-w-0 bg-surface-950/20">
       {/* Sub-Header / Toolbar */}
-      <div className="sticky top-0 z-20 px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-surface-800/40 bg-surface-950/90 backdrop-blur-xl">
-        <div className="flex items-center gap-6">
+      <div className="sticky top-0 z-20 px-6 py-4 flex items-center justify-between gap-4 border-b border-surface-800/40 bg-surface-950/90 backdrop-blur-xl overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-6 shrink-0">
           {/* View Toggle */}
           <div className="flex p-1 rounded-xl bg-surface-800/40 border border-surface-700/30">
             <button
@@ -104,7 +104,7 @@ export default function Tasks() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <NotificationBell />
           <div className="w-[1px] h-6 bg-surface-800 mx-1" />
           <button 
