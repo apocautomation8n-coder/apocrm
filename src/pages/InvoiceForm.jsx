@@ -230,7 +230,7 @@ export default function InvoiceForm() {
       if(itemErr) throw itemErr
 
       toast.success(id ? 'Factura actualizada' : 'Factura generada')
-      navigate('/invoices')
+      navigate('/finance?tab=invoices')
       
     } catch (e) {
       console.error('Save invoice error object:', JSON.stringify(e, null, 2))
@@ -253,7 +253,7 @@ export default function InvoiceForm() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 shrink-0">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/invoices')} className="p-2 rounded-xl bg-surface-800 hover:bg-surface-700 text-surface-400 hover:text-surface-100 transition-colors">
+          <button onClick={() => navigate('/finance?tab=invoices')} className="p-2 rounded-xl bg-surface-800 hover:bg-surface-700 text-surface-400 hover:text-surface-100 transition-colors">
             <ArrowLeft size={18} />
           </button>
           <div>

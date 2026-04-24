@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { DollarSign, CreditCard, TrendingDown, BarChart3, Wallet, Calculator, TrendingUp, FileText } from 'lucide-react'
 import FinanceDashboard from './FinanceDashboard'
 import FinanceProjects from './FinanceProjects'
@@ -11,7 +12,8 @@ import Invoices from './Invoices'
 import MonthlyReportNotification from '../components/finance/MonthlyReportNotification'
 
 export default function Finance() {
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'dashboard')
   const [showManualReport, setShowManualReport] = useState(false)
 
   const tabs = [
