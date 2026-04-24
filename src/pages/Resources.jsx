@@ -20,8 +20,8 @@ export default function Resources() {
       <div className="border-b border-surface-800">
         <Tabs
           tabs={[
-            { id: 'drive', label: 'Archivos & Documentos' },
-            { id: 'portfolio', label: 'Portafolio' }
+            { value: 'drive', label: 'Archivos & Documentos' },
+            { value: 'portfolio', label: 'Portafolio' }
           ]}
           activeTab={activeTab}
           onChange={setActiveTab}
