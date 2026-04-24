@@ -218,8 +218,13 @@ export default function PortfolioProjects({ hideHeader = false }) {
 
               {/* Content */}
               <div className="p-5 flex-1 flex flex-col relative">
-                <div className="flex justify-between items-start mb-2 pr-6">
-                  <h3 className="text-lg font-bold text-surface-100 line-clamp-1" title={project.name}>{project.name}</h3>
+                <div className="flex justify-between items-start mb-2 pr-6 relative group/tip">
+                  <h3 className="text-lg font-bold text-surface-100 line-clamp-1">{project.name}</h3>
+                  
+                  {/* Instant Tooltip */}
+                  <div className="absolute left-0 -top-8 bg-surface-800 text-white text-[10px] px-2 py-1 rounded border border-surface-700 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-all duration-75 whitespace-nowrap z-50 shadow-2xl">
+                    {project.name}
+                  </div>
                 </div>
 
                 <div className="absolute top-4 right-4">

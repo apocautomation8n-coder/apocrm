@@ -265,11 +265,16 @@ export default function ResourceDrive() {
                 className="p-4 flex items-center justify-between cursor-pointer hover:border-primary-500/50 hover:bg-surface-800/50 transition-colors group"
                 onClick={() => setCurrentFolderId(folder.id)}
               >
-                <div className="flex items-center gap-3 overflow-hidden">
+                <div className="flex items-center gap-3 overflow-visible relative group/tip">
                   <div className="p-2 bg-primary-500/10 rounded-lg text-primary-400 shrink-0">
                     <Folder size={20} />
                   </div>
-                  <span className="font-medium text-surface-100 truncate" title={folder.name}>{folder.name}</span>
+                  <span className="font-medium text-surface-100 truncate">{folder.name}</span>
+                  
+                  {/* Instant Tooltip */}
+                  <div className="absolute left-0 -top-8 bg-surface-800 text-white text-[10px] px-2 py-1 rounded border border-surface-700 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-all duration-75 whitespace-nowrap z-50 shadow-2xl">
+                    {folder.name}
+                  </div>
                 </div>
                 <button 
                   onClick={(e) => handleDeleteFolder(folder.id, e)}
@@ -300,11 +305,16 @@ export default function ResourceDrive() {
                     </button>
                   </div>
                   
-                  <div>
-                    <h4 className="font-medium text-surface-100 truncate text-sm" title={file.name}>{file.name}</h4>
+                  <div className="relative group/tip overflow-visible">
+                    <h4 className="font-medium text-surface-100 truncate text-sm">{file.name}</h4>
                     <p className="text-xs text-surface-500 mt-0.5">
                       {file.type === 'note' ? 'Nota' : formatSize(file.size)}
                     </p>
+                    
+                    {/* Instant Tooltip */}
+                    <div className="absolute left-0 -top-8 bg-surface-800 text-white text-[10px] px-2 py-1 rounded border border-surface-700 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-all duration-75 whitespace-nowrap z-50 shadow-2xl">
+                      {file.name}
+                    </div>
                   </div>
                 </div>
               </Card>
