@@ -21,8 +21,8 @@ export default function Finance() {
     { id: 'projects', label: 'Proyectos', icon: DollarSign },
     { id: 'plans', label: 'Mensualidades', icon: CreditCard },
     { id: 'expenses', label: 'Egresos', icon: TrendingDown },
-    { id: 'converter', label: 'Conversión', icon: Calculator },
     { id: 'invoices', label: 'Facturas', icon: FileText },
+    { id: 'converter', label: 'Conversión', icon: Calculator },
   ]
 
   return (
