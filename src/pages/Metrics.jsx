@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { StatCard } from '../components/ui/Card'
 import Tabs from '../components/ui/Tabs'
 import Button from '../components/ui/Button'
-import { Send, UserCheck, MessageSquareX, RefreshCw, BarChart3, Edit2, Save, X, History, CheckCircle2, CalendarDays } from 'lucide-react'
+import { Send, UserCheck, MessageSquareX, RefreshCw, BarChart3, Edit2, Save, X, History, CheckCircle2, CalendarDays, Video } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 // Dynamic agents will be fetched from the database
@@ -27,6 +27,14 @@ export default function Metrics({ hideHeader = false }) {
     sent: 0,
     responded: 0
   })
+
+  const [videoLinkCount, setVideoLinkCount] = useState(0)
+
+  // YouTube links per agent slug
+  const AGENT_VIDEO_LINKS = {
+    talleres: 'youtube.com/watch?v=i93Yyv8REjg',
+    gym: 'youtube.com/shorts/L0VKAk4YTb0',
+  }
 
   const [editForm, setEditForm] = useState({
     override_metrics: false,
@@ -150,6 +158,30 @@ export default function Metrics({ hideHeader = false }) {
     }
   }
 
+  // 2c. Fetch Video Link Count — counts outbound messages containing the agent's YouTube link
+  const fetchVideoLinkCount = async (agentSlug) => {
+    if (!agentSlug) return
+    const agent = agents.find(a => a.slug === agentSlug)
+    if (!agent) return
+
+    const videoUrl = AGENT_VIDEO_LINKS[agentSlug]
+    if (!videoUrl) {
+      setVideoLinkCount(0)
+      return
+    }
+
+    const { count, error } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('agent_id', agent.id)
+      .eq('direction', 'outbound')
+      .ilike('body', `%${videoUrl}%`)
+
+    if (!error) {
+      setVideoLinkCount(count || 0)
+    }
+  }
+
   // 3. Fetch overrides from Supabase
   const fetchDbMetrics = async () => {
     if (!activeAgent) return
@@ -180,6 +212,7 @@ export default function Metrics({ hideHeader = false }) {
       fetchDbMetrics()
       fetchCrmMetrics(activeAgent)
       fetchFollowUpMetrics(activeAgent)
+      fetchVideoLinkCount(activeAgent)
       setIsEditing(false)
     }
   }, [activeAgent, agents])
@@ -230,7 +263,7 @@ export default function Metrics({ hideHeader = false }) {
             </>
           ) : (
             <>
-              <Button variant="secondary" size="sm" onClick={() => { fetchCrmMetrics(activeAgent); fetchFollowUpMetrics(activeAgent) }} loading={loading}>
+              <Button variant="secondary" size="sm" onClick={() => { fetchCrmMetrics(activeAgent); fetchFollowUpMetrics(activeAgent); fetchVideoLinkCount(activeAgent) }} loading={loading}>
                 <RefreshCw size={14} />
                 Refrescar
               </Button>
@@ -366,6 +399,30 @@ export default function Metrics({ hideHeader = false }) {
           </div>
         </div>
       </div>
+
+      {/* Video Link Metrics Section */}
+      {AGENT_VIDEO_LINKS[activeAgent] && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Video size={16} className="text-rose-400" />
+            <h2 className="text-sm font-semibold text-surface-300 uppercase tracking-wider">Video Enviado</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 rounded-2xl border bg-surface-900/60 border-surface-800/60">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-surface-400">Links de Video Enviados</span>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-500/10">
+                  <Video size={16} className="text-rose-400" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-surface-100">{videoLinkCount}</div>
+              <p className="text-[11px] text-surface-500 mt-1">
+                Veces que se envió el link de YouTube a prospectos
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
