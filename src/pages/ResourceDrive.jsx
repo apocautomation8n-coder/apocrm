@@ -257,7 +257,7 @@ export default function ResourceDrive() {
             <p className="text-surface-400 mt-1">Crea una nueva carpeta, nota o sube un archivo.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Folders */}
             {folders.map(folder => (
               <Card 
@@ -265,11 +265,11 @@ export default function ResourceDrive() {
                 className="p-4 flex items-center justify-between cursor-pointer hover:border-primary-500/50 hover:bg-surface-800/50 transition-colors group"
                 onClick={() => setCurrentFolderId(folder.id)}
               >
-                <div className="flex items-center gap-3 overflow-visible relative group/tip">
+                <div className="flex items-center gap-3 overflow-visible relative group/tip min-w-0">
                   <div className="p-2 bg-primary-500/10 rounded-lg text-primary-400 shrink-0">
                     <Folder size={20} />
                   </div>
-                  <span className="font-medium text-surface-100 truncate">{folder.name}</span>
+                  <span className="font-medium text-surface-100 truncate min-w-0 flex-1">{folder.name}</span>
                   
                   {/* Instant Tooltip */}
                   <div className="absolute left-0 bottom-full mb-2 w-max max-w-[300px] bg-surface-950 text-white text-[11px] px-3 py-1.5 rounded-lg border border-surface-700 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-all duration-100 z-50 shadow-2xl whitespace-normal break-words">
@@ -305,8 +305,8 @@ export default function ResourceDrive() {
                     </button>
                   </div>
                   
-                  <div className="relative group/tip overflow-visible">
-                    <h4 className="font-medium text-surface-100 truncate text-sm">{file.name}</h4>
+                  <div className="relative group/tip overflow-visible min-w-0">
+                    <h4 className="font-medium text-surface-100 truncate text-sm flex-1 min-w-0">{file.name}</h4>
                     <p className="text-xs text-surface-500 mt-0.5">
                       {file.type === 'note' ? 'Nota' : formatSize(file.size)}
                     </p>
