@@ -1,22 +1,22 @@
 
 import supabase from '../server/supabaseAdmin.js'
 
-async function enableRealtime() {
-  const { error } = await supabase.rpc('exec_sql', {
-    sql: `
-      -- Enable Realtime for messages
-      ALTER publication supabase_realtime ADD TABLE messages;
-      -- Enable Realtime for tasks
-      ALTER publication supabase_realtime ADD TABLE tasks;
-    `
-  })
+async function checkPipeline() {
+  const { data: stages, error: sErr } = await supabase
+    .from('pipeline_stages')
+    .select('*')
   
-  if (error) {
-    console.log('Note: Manual Realtime enablement required in Supabase Dashboard (Database > Publications > supabase_realtime)')
-  } else {
-    console.log('Realtime enabled for messages and tasks!')
-  }
+  if (sErr) console.error('Stages error:', sErr)
+  else console.log('Pipeline Stages:', stages)
+
+  const { data: cards, error: cErr } = await supabase
+    .from('pipeline_cards')
+    .select('*')
+    .limit(1)
+  
+  if (cErr) console.error('Cards error:', cErr)
+  else console.log('Pipeline Card sample:', cards[0])
 }
 
-enableRealtime()
+checkPipeline()
 

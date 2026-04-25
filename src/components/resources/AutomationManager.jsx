@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import { Plus, Trash2, Zap, AlertCircle, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Zap, AlertCircle, Loader2, Kanban } from 'lucide-react'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
 import toast from 'react-hot-toast'
@@ -163,6 +163,67 @@ export default function AutomationManager() {
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-sky-500" />
                   <span className="text-surface-200 font-medium">Reunion Agendada</span>
+                </div>
+              </td>
+              <td className="px-6 py-4 text-right">
+                <span className="text-[10px] font-bold text-primary-500/60 uppercase">Sistema</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="bg-surface-900/80 border border-surface-800/60 rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-surface-800/60 bg-surface-900/40">
+          <h4 className="text-xs font-semibold text-surface-400 uppercase tracking-wider">Reglas de Pipeline (Auto-Flow)</h4>
+        </div>
+        <table className="w-full text-sm">
+          <tbody className="divide-y divide-surface-800/40">
+            <tr className="hover:bg-surface-800/30 transition-colors">
+              <td className="px-6 py-4">
+                <div className="flex flex-col">
+                  <span className="text-surface-200 font-medium italic">Creación Automática: Nuevo Lead</span>
+                  <span className="text-[11px] text-surface-500">Si el contacto responde más de 4 mensajes</span>
+                </div>
+              </td>
+              <td className="px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <Kanban size={14} className="text-primary-400" />
+                  <span className="text-surface-200 font-medium">Mover a: Nuevo Lead</span>
+                </div>
+              </td>
+              <td className="px-6 py-4 text-right">
+                <span className="text-[10px] font-bold text-primary-500/60 uppercase">Sistema</span>
+              </td>
+            </tr>
+            <tr className="hover:bg-surface-800/30 transition-colors">
+              <td className="px-6 py-4">
+                <div className="flex flex-col">
+                  <span className="text-surface-200 font-medium italic">Interés Detectado</span>
+                  <span className="text-[11px] text-surface-500">Si menciona "interesa", "precio", "contame más"...</span>
+                </div>
+              </td>
+              <td className="px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <Kanban size={14} className="text-warning-400" />
+                  <span className="text-surface-200 font-medium">Mover a: Interesado</span>
+                </div>
+              </td>
+              <td className="px-6 py-4 text-right">
+                <span className="text-[10px] font-bold text-primary-500/60 uppercase">Sistema</span>
+              </td>
+            </tr>
+            <tr className="hover:bg-surface-800/30 transition-colors">
+              <td className="px-6 py-4">
+                <div className="flex flex-col">
+                  <span className="text-surface-200 font-medium italic">Cita / Visita Agendada</span>
+                  <span className="text-[11px] text-surface-500">Si se confirma una reunión o visita</span>
+                </div>
+              </td>
+              <td className="px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <Kanban size={14} className="text-violet-400" />
+                  <span className="text-surface-200 font-medium">Mover a: Discovery Agendada</span>
                 </div>
               </td>
               <td className="px-6 py-4 text-right">

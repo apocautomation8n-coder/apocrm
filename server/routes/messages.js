@@ -7,6 +7,14 @@ const AGENT_VIDEO_LINKS = {
   gym: 'youtube.com/shorts/L0VKAk4YTb0',
 }
 
+const PIPELINE_STAGES = {
+  NUEVO_LEAD: '0425d316-d9f6-4456-a31d-869a9c949ff3',
+  INTERESADO: '58bb636f-655b-4cc0-bc38-d6b98670713f',
+  DISCOVERY_AGENDADA: '20bf38cd-37b0-4c21-8a2e-c8aeac9bd210' // Note: corrected slightly if needed based on list
+}
+// Correction: based on list output, Discovery Agendada is 20bf38cd-37b0-4c21-8a2e-c8aeac8bd210
+PIPELINE_STAGES.DISCOVERY_AGENDADA = '20bf38cd-37b0-4c21-8a2e-c8aeac8bd210'
+
 const VIDEO_RECURRING_MESSAGES = [
   "Hola como estas? pudiste ver la info?",
   "Buenas como va la semana, queria saber si pudiste ver lo que te pasamos",
@@ -102,11 +110,37 @@ router.post('/inbound', async (req, res) => {
         }
       }
 
-      // C) Custom Keyword Rule: Meeting (Reunion)
+      // C) Custom Keyword Rule: Meeting (Reunion) -> Move to Discovery Agendada
       const meetingKeywords = ['reunion', 'agendar', 'agendado', 'agendada', 'visita', 'nos vemos', 'pasar por', 'podes pasar', 'venite', 'direccion', 'ubicacion']
       if (meetingKeywords.some(k => lowerMsg.includes(k))) {
         const { data: lb } = await supabase.from('labels').select('id').ilike('name', 'Reunion Agendada').maybeSingle()
         if (lb) await applyLabel(contact.id, lb.id)
+        
+        // Pipeline Move
+        await movePipeline(contact.id, PIPELINE_STAGES.DISCOVERY_AGENDADA)
+      }
+
+      // D) Automatic Pipeline: Nuevo Lead (4+ messages)
+      const { count: msgCount } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('contact_id', contact.id)
+        .eq('direction', 'inbound')
+      
+      if (msgCount && msgCount >= 5) {
+        // If they are not in pipeline, add to Nuevo Lead
+        const { data: inPipeline } = await supabase.from('pipeline_cards').select('id').eq('contact_id', contact.id).maybeSingle()
+        if (!inPipeline) {
+          await supabase.from('pipeline_cards').insert({ contact_id: contact.id, stage_id: PIPELINE_STAGES.NUEVO_LEAD })
+          console.log(`[PIPELINE] Created Nuevo Lead card for contact ${contact.id}`)
+        }
+      }
+
+      // E) Automatic Pipeline: Interesado (Interest Keywords)
+      const interestKeywords = ['interesa', 'contame', 'discovery', 'asesoramiento', 'quiero saber mas', 'precio', 'costo', 'valor']
+      if (interestKeywords.some(k => lowerMsg.includes(k))) {
+        // Move to Interesado ONLY if they are not already in a later stage
+        await movePipeline(contact.id, PIPELINE_STAGES.INTERESADO, true)
       }
 
     } catch (autoErr) {
@@ -124,6 +158,31 @@ router.post('/inbound', async (req, res) => {
       if (!existing) {
         await supabase.from('contact_labels').insert({ contact_id: contactId, label_id: labelId })
         console.log(`[AUTOMATION] Applied label ${labelId} to contact ${contactId}`)
+      }
+    }
+
+    async function movePipeline(contactId, stageId, onlyForward = false) {
+      const { data: existingCard } = await supabase
+        .from('pipeline_cards')
+        .select('id, stage_id, pipeline_stages(position)')
+        .eq('contact_id', contactId)
+        .maybeSingle()
+
+      if (existingCard) {
+        // If onlyForward, check position
+        if (onlyForward) {
+          const { data: newStage } = await supabase.from('pipeline_stages').select('position').eq('id', stageId).single()
+          if (newStage && existingCard.pipeline_stages?.position >= newStage.position) {
+            return // Don't move back
+          }
+        }
+
+        await supabase.from('pipeline_cards').update({ stage_id: stageId }).eq('id', existingCard.id)
+        console.log(`[PIPELINE] Moved contact ${contactId} to stage ${stageId}`)
+      } else {
+        // Create if doesn't exist
+        await supabase.from('pipeline_cards').insert({ contact_id: contactId, stage_id: stageId })
+        console.log(`[PIPELINE] Added contact ${contactId} to pipeline stage ${stageId}`)
       }
     }
 
@@ -242,7 +301,7 @@ router.post('/bot-outbound', async (req, res) => {
       return sendError(res, 'Failed to save bot message', 500)
     }
 
-    // New: Agent Automation for Meeting Confirmation
+    // New: Agent Automation for Meeting Confirmation -> Move to Discovery Agendada
     try {
       const lowerMsg = (message || '').toLowerCase()
       if (lowerMsg.includes('agendado') || lowerMsg.includes('agendada') || lowerMsg.includes('confirmado') || lowerMsg.includes('confirmada')) {
@@ -252,6 +311,14 @@ router.post('/bot-outbound', async (req, res) => {
             contact_id: contact.id,
             label_id: lb.id
           }, { onConflict: 'contact_id,label_id' })
+        }
+
+        // Pipeline Move
+        const { data: existingCard } = await supabase.from('pipeline_cards').select('id').eq('contact_id', contact.id).maybeSingle()
+        if (existingCard) {
+          await supabase.from('pipeline_cards').update({ stage_id: PIPELINE_STAGES.DISCOVERY_AGENDADA }).eq('id', existingCard.id)
+        } else {
+          await supabase.from('pipeline_cards').insert({ contact_id: contact.id, stage_id: PIPELINE_STAGES.DISCOVERY_AGENDADA })
         }
       }
     } catch (err) {
