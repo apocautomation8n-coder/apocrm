@@ -103,7 +103,8 @@ router.post('/inbound', async (req, res) => {
       }
 
       // C) Custom Keyword Rule: Meeting (Reunion)
-      if (lowerMsg.includes('reunion') || lowerMsg.includes('agendar')) {
+      const meetingKeywords = ['reunion', 'agendar', 'agendado', 'agendada', 'visita', 'nos vemos', 'pasar por', 'podes pasar', 'venite', 'direccion', 'ubicacion']
+      if (meetingKeywords.some(k => lowerMsg.includes(k))) {
         const { data: lb } = await supabase.from('labels').select('id').ilike('name', 'Reunion Agendada').maybeSingle()
         if (lb) await applyLabel(contact.id, lb.id)
       }
@@ -239,6 +240,22 @@ router.post('/bot-outbound', async (req, res) => {
 
     if (msgErr) {
       return sendError(res, 'Failed to save bot message', 500)
+    }
+
+    // New: Agent Automation for Meeting Confirmation
+    try {
+      const lowerMsg = (message || '').toLowerCase()
+      if (lowerMsg.includes('agendado') || lowerMsg.includes('agendada') || lowerMsg.includes('confirmado') || lowerMsg.includes('confirmada')) {
+        const { data: lb } = await supabase.from('labels').select('id').ilike('name', 'Reunion Agendada').maybeSingle()
+        if (lb) {
+          await supabase.from('contact_labels').upsert({
+            contact_id: contact.id,
+            label_id: lb.id
+          }, { onConflict: 'contact_id,label_id' })
+        }
+      }
+    } catch (err) {
+      console.error('[AGENT-AUTOMATION] Error:', err)
     }
 
     // 4. Check if this is the "initial message" to start a follow-up flow
