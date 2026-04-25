@@ -4,6 +4,11 @@ import toast from 'react-hot-toast'
 
 const N8N_WEBHOOK = import.meta.env.VITE_N8N_WEBHOOK
 
+const AGENT_VIDEO_LINKS = {
+  talleres: 'youtube.com/watch?v=i93Yyv8REjg',
+  gym: 'youtube.com/shorts/L0VKAk4YTb0',
+}
+
 /**
  * Normalizes a phone number.
  * For Argentina (54), it strips the '9' prefix if present to create a canonical format.
@@ -275,6 +280,27 @@ export async function sendOutboundMessage({ phone, agentSlug, agentId, contactId
   if (error) {
     toast.error('Error guardando mensaje')
     throw error
+  }
+
+  // 3) Detect Video Link and Schedule "Seguimiento 2" (2 days later)
+  const lowerContent = (message || '').toLowerCase()
+  const videoUrl = AGENT_VIDEO_LINKS[agentSlug]
+  
+  if (videoUrl && lowerContent.includes(videoUrl.toLowerCase())) {
+    const scheduledAt = new Date()
+    scheduledAt.setDate(scheduledAt.getDate() + 2) // 2 days later
+
+    await supabase
+      .from('follow_ups')
+      .insert({
+        contact_id: contactId,
+        agent_id: agentId,
+        status: 'pending',
+        type: 'video',
+        scheduled_at: scheduledAt.toISOString()
+      })
+    
+    toast.success('Seguimiento de video programado (2 días)')
   }
 
   return data

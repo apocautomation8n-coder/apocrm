@@ -19,6 +19,7 @@ export default function FollowUps({ hideHeader = false }) {
   const [followUps, setFollowUps] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('pending') // pending, followed_up, responded, canceled
+  const [type, setType] = useState('default') // default, video
 
   const fetchFollowUps = async () => {
     setLoading(true)
@@ -30,6 +31,7 @@ export default function FollowUps({ hideHeader = false }) {
         agents (name, slug)
       `)
       .eq('status', filter)
+      .eq('type', type)
       .order('scheduled_at', { ascending: filter === 'pending' })
     
     if (error) {
@@ -42,36 +44,67 @@ export default function FollowUps({ hideHeader = false }) {
 
   useEffect(() => {
     fetchFollowUps()
-  }, [filter])
+  }, [filter, type])
 
   const handleManualTrigger = async (fu) => {
     if (!confirm('¿Quieres disparar el seguimiento ahora mismo?')) return
     
     try {
-      const response = await fetch('https://automation8n.fluxia.site/webhook/f6cc20e3-267d-4e80-af86-da9bfe0d3608', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: fu.contacts?.phone,
-          name: fu.contacts?.name,
-          agent_slug: fu.agents?.slug,
-          follow_up_id: fu.id,
-          manual: true
+      if (fu.type === 'video') {
+        // SEGUIMIENTO 2: Two-step sequence
+        // 1. Abrir ventana 24h
+        const resp1 = await fetch('https://automation8n.fluxia.site/webhook/86b4d2df-5fea-40c8-a121-26c51a92300c', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent_slug: fu.agents?.slug,
+            phone: fu.contacts?.phone
+          })
         })
-      })
 
-      if (response.ok) {
-        await supabase
-          .from('follow_ups')
-          .update({ status: 'followed_up', updated_at: new Date().toISOString() })
-          .eq('id', fu.id)
-        
-        toast.success('Seguimiento enviado correctamente')
-        fetchFollowUps()
+        if (!resp1.ok) throw new Error('Error al abrir ventana 24h')
+
+        // 2. Send follow-up message
+        const resp2 = await fetch('https://automation8n.fluxia.site/webhook/a56c59a0-7b5e-4196-878f-130d2098fcd5', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: fu.contacts?.phone,
+            agent_slug: fu.agents?.slug,
+            contact_name: fu.contacts?.name,
+            message: "Como estas? pudiste ver el video que te mande?",
+            media_type: 'text'
+          })
+        })
+
+        if (!resp2.ok) throw new Error('Error al enviar mensaje de seguimiento')
+
       } else {
-        throw new Error('Fallback hook failed')
+        // DEFAULT SEGUIMIENTO
+        const response = await fetch('https://automation8n.fluxia.site/webhook/f6cc20e3-267d-4e80-af86-da9bfe0d3608', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: fu.contacts?.phone,
+            name: fu.contacts?.name,
+            agent_slug: fu.agents?.slug,
+            follow_up_id: fu.id,
+            manual: true
+          })
+        })
+
+        if (!response.ok) throw new Error('Fallback hook failed')
       }
+
+      await supabase
+        .from('follow_ups')
+        .update({ status: 'followed_up', updated_at: new Date().toISOString() })
+        .eq('id', fu.id)
+      
+      toast.success('Seguimiento enviado correctamente')
+      fetchFollowUps()
     } catch (err) {
+      console.error(err)
       toast.error('Error al disparar seguimiento')
     }
   }
@@ -101,7 +134,7 @@ export default function FollowUps({ hideHeader = false }) {
 
   const getStatusLabel = (status) => {
     switch (status) {
-      case 'pending': return 'Pendiente (Esperando 23h)'
+      case 'pending': return type === 'video' ? 'Pendiente (Esperando 2 días)' : 'Pendiente (Esperando 23h)'
       case 'followed_up': return 'Seguimiento Enviado'
       case 'responded': return 'Respondido (Cancelado)'
       case 'canceled': return 'Cancelado Manual'
@@ -126,6 +159,30 @@ export default function FollowUps({ hideHeader = false }) {
         </Button>
       </div>
       )}
+
+      {/* Type Selector */}
+      <div className="flex gap-4 items-center">
+        <div className="flex gap-2 bg-surface-900/50 p-1 rounded-xl w-max border border-surface-800/60">
+          {[
+            { id: 'default', label: 'Seguimientos 1 (23h)' },
+            { id: 'video', label: 'Seguimientos 2 (Video)' }
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setType(t.id)}
+              className={`
+                px-4 py-2 text-xs font-semibold rounded-lg transition-all
+                ${type === t.id 
+                  ? 'bg-primary-600 text-white shadow-lg' 
+                  : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800'
+                }
+              `}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Tabs / Filters */}
       <div className="flex gap-2 bg-surface-900/50 p-1 rounded-xl w-max border border-surface-800/60">

@@ -2,6 +2,11 @@ import { Router } from 'express'
 import supabase from '../supabaseAdmin.js'
 import { sendSuccess, sendError, safeDb, findOrCreateContact } from '../utils.js'
 
+const AGENT_VIDEO_LINKS = {
+  talleres: 'youtube.com/watch?v=i93Yyv8REjg',
+  gym: 'youtube.com/shorts/L0VKAk4YTb0',
+}
+
 const router = Router()
 
 // POST /api/messages/inbound — receive inbound message from n8n / Evolution API
@@ -172,6 +177,26 @@ router.post('/bot-outbound', async (req, res) => {
             contact_id: contact.id,
             agent_id: agent.id,
             status: 'pending',
+            type: 'default',
+            scheduled_at: scheduledAt.toISOString()
+          })
+      )
+    }
+
+    // 5. Detect Video Link and Schedule "Seguimiento 2" (2 days later)
+    const videoUrl = AGENT_VIDEO_LINKS[agent_slug]
+    if (videoUrl && lowerContent.includes(videoUrl.toLowerCase())) {
+      const scheduledAt = new Date()
+      scheduledAt.setDate(scheduledAt.getDate() + 2) // 2 days later
+
+      await safeDb(() => 
+        supabase
+          .from('follow_ups')
+          .insert({
+            contact_id: contact.id,
+            agent_id: agent.id,
+            status: 'pending',
+            type: 'video',
             scheduled_at: scheduledAt.toISOString()
           })
       )
@@ -196,6 +221,7 @@ router.post('/followups/trigger', async (req, res) => {
           id,
           contact_id,
           agent_id,
+          type,
           contacts (name, phone),
           agents (slug)
         `)
@@ -214,16 +240,43 @@ router.post('/followups/trigger', async (req, res) => {
     // 2. Trigger webhook for each due follow-up
     for (const fu of dueFollowUps) {
       try {
-        const response = await fetch('https://automation8n.fluxia.site/webhook/f6cc20e3-267d-4e80-af86-da9bfe0d3608', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone: fu.contacts?.phone,
-            name: fu.contacts?.name,
-            agent_slug: fu.agents?.slug,
-            follow_up_id: fu.id
+        if (fu.type === 'video') {
+          // SEGUIMIENTO 2: Two-step sequence
+          // 1. Abrir ventana 24h
+          await fetch('https://automation8n.fluxia.site/webhook/86b4d2df-5fea-40c8-a121-26c51a92300c', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              agent_slug: fu.agents?.slug,
+              phone: fu.contacts?.phone
+            })
           })
-        })
+
+          // 2. Send follow-up message
+          await fetch('https://automation8n.fluxia.site/webhook/a56c59a0-7b5e-4196-878f-130d2098fcd5', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: fu.contacts?.phone,
+              agent_slug: fu.agents?.slug,
+              contact_name: fu.contacts?.name,
+              message: "Como estas? pudiste ver el video que te mande?",
+              media_type: 'text'
+            })
+          })
+        } else {
+          // DEFAULT SEGUIMIENTO (Seguimientos 1)
+          await fetch('https://automation8n.fluxia.site/webhook/f6cc20e3-267d-4e80-af86-da9bfe0d3608', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: fu.contacts?.phone,
+              name: fu.contacts?.name,
+              agent_slug: fu.agents?.slug,
+              follow_up_id: fu.id
+            })
+          })
+        }
 
         if (response.ok) {
           // 3. Mark as followed_up
