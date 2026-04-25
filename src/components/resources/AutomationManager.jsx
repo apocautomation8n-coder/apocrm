@@ -130,6 +130,53 @@ export default function AutomationManager() {
       </div>
 
       <div className="bg-surface-900/80 border border-surface-800/60 rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-surface-800/60 bg-surface-900/40">
+          <h4 className="text-xs font-semibold text-surface-400 uppercase tracking-wider">Reglas del Sistema (Automáticas)</h4>
+        </div>
+        <table className="w-full text-sm">
+          <tbody className="divide-y divide-surface-800/40">
+            <tr className="hover:bg-surface-800/30 transition-colors">
+              <td className="px-6 py-4">
+                <div className="flex flex-col">
+                  <span className="text-surface-200 font-medium italic">Respuesta a Plantilla Inicial</span>
+                  <span className="text-[11px] text-surface-500">Si el cliente responde después de enviar "¿cómo estás? ¿Tenés un minuto?"</span>
+                </div>
+              </td>
+              <td className="px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                  <span className="text-surface-200 font-medium">Plantilla respondida</span>
+                </div>
+              </td>
+              <td className="px-6 py-4 text-right">
+                <span className="text-[10px] font-bold text-primary-500/60 uppercase">Sistema</span>
+              </td>
+            </tr>
+            <tr className="hover:bg-surface-800/30 transition-colors">
+              <td className="px-6 py-4">
+                <div className="flex flex-col">
+                  <span className="text-surface-200 font-medium italic">Intención de Reunión</span>
+                  <span className="text-[11px] text-surface-500">Si el mensaje contiene "reunion" o "agendar"</span>
+                </div>
+              </td>
+              <td className="px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-sky-500" />
+                  <span className="text-surface-200 font-medium">Reunion Agendada</span>
+                </div>
+              </td>
+              <td className="px-6 py-4 text-right">
+                <span className="text-[10px] font-bold text-primary-500/60 uppercase">Sistema</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="bg-surface-900/80 border border-surface-800/60 rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-surface-800/60 bg-surface-900/40">
+          <h4 className="text-xs font-semibold text-surface-400 uppercase tracking-wider">Tus Reglas Personalizadas</h4>
+        </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-surface-800/60 bg-surface-900/40">
@@ -142,7 +189,7 @@ export default function AutomationManager() {
             {rules.length === 0 ? (
               <tr>
                 <td colSpan="3" className="px-6 py-12 text-center text-surface-500 italic">
-                  No hay reglas de automatización configuradas aún.
+                  No hay reglas personalizadas configuradas aún.
                 </td>
               </tr>
             ) : (

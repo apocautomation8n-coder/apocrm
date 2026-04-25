@@ -78,9 +78,13 @@ export default function Sidebar() {
       })
       .subscribe()
 
+    const handleUnreadUpdate = () => fetchUnread()
+    window.addEventListener('unread-updated', handleUnreadUpdate)
+
     return () => { 
       supabase.removeChannel(msgChannel)
       supabase.removeChannel(taskChannel)
+      window.removeEventListener('unread-updated', handleUnreadUpdate)
     }
   }, [])
 

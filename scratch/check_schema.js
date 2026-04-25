@@ -1,36 +1,22 @@
 
-import { createClient } from '@supabase/supabase-js'
-import dotenv from 'dotenv'
+import supabase from '../server/supabaseAdmin.js'
 
-dotenv.config()
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY 
-
-const supabase = createClient(supabaseUrl, supabaseKey)
-
-async function checkLabels() {
-  const { data: labels, error: lError } = await supabase
-    .from('labels')
-    .select('*')
+async function enableRealtime() {
+  const { error } = await supabase.rpc('exec_sql', {
+    sql: `
+      -- Enable Realtime for messages
+      ALTER publication supabase_realtime ADD TABLE messages;
+      -- Enable Realtime for tasks
+      ALTER publication supabase_realtime ADD TABLE tasks;
+    `
+  })
   
-  if (lError) {
-    console.error('Error fetching labels:', lError)
+  if (error) {
+    console.log('Note: Manual Realtime enablement required in Supabase Dashboard (Database > Publications > supabase_realtime)')
   } else {
-    console.log('Labels:', labels)
-  }
-
-  const { data: contactLabels, error: clError } = await supabase
-    .from('contact_labels')
-    .select('*')
-    .limit(5)
-  
-  if (clError) {
-    console.error('Error fetching contact_labels:', clError)
-  } else {
-    console.log('Contact Labels sample:', contactLabels)
+    console.log('Realtime enabled for messages and tasks!')
   }
 }
 
-checkLabels()
+enableRealtime()
 

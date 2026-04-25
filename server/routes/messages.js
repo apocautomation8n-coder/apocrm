@@ -75,29 +75,55 @@ router.post('/inbound', async (req, res) => {
       const lowerMsg = (message || '').toLowerCase()
       const { data: rules } = await supabase.from('automation_rules').select('keyword, label_id')
       
+      // A) Keyword Rules from DB
       if (rules && rules.length > 0) {
         for (const rule of rules) {
           if (lowerMsg.includes(rule.keyword.toLowerCase())) {
-            // Check if label already exists for this contact to avoid duplicates
-            const { data: existing } = await supabase
-              .from('contact_labels')
-              .select('*')
-              .eq('contact_id', contact.id)
-              .eq('label_id', rule.label_id)
-              .maybeSingle()
-            
-            if (!existing) {
-              await supabase.from('contact_labels').insert({
-                contact_id: contact.id,
-                label_id: rule.label_id
-              })
-              console.log(`[AUTOMATION] Applied label ${rule.label_id} to contact ${contact.id} due to keyword: ${rule.keyword}`)
-            }
+            await applyLabel(contact.id, rule.label_id)
           }
         }
       }
+
+      // B) Custom Stateful Rule: Template Connection Response
+      const { data: lastOutbound } = await supabase
+        .from('messages')
+        .select('content')
+        .eq('contact_id', contact.id)
+        .eq('direction', 'outbound')
+        .order('timestamp', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (lastOutbound) {
+        const lastContent = lastOutbound.content.toLowerCase()
+        if (lastContent.includes('¿cómo estás?') && lastContent.includes('¿tenés un minuto?')) {
+          const { data: lb } = await supabase.from('labels').select('id').ilike('name', 'Plantilla respondida').maybeSingle()
+          if (lb) await applyLabel(contact.id, lb.id)
+        }
+      }
+
+      // C) Custom Keyword Rule: Meeting (Reunion)
+      if (lowerMsg.includes('reunion') || lowerMsg.includes('agendar')) {
+        const { data: lb } = await supabase.from('labels').select('id').ilike('name', 'Reunion Agendada').maybeSingle()
+        if (lb) await applyLabel(contact.id, lb.id)
+      }
+
     } catch (autoErr) {
       console.error('[AUTOMATION] Error applying rules:', autoErr)
+    }
+
+    async function applyLabel(contactId, labelId) {
+      const { data: existing } = await supabase
+        .from('contact_labels')
+        .select('*')
+        .eq('contact_id', contactId)
+        .eq('label_id', labelId)
+        .maybeSingle()
+      
+      if (!existing) {
+        await supabase.from('contact_labels').insert({ contact_id: contactId, label_id: labelId })
+        console.log(`[AUTOMATION] Applied label ${labelId} to contact ${contactId}`)
+      }
     }
 
     // 5. Cancel any pending follow-up for this contact if they replied

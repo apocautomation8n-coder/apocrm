@@ -219,13 +219,17 @@ export function useMessages(agentId, contactId) {
     setLoading(false)
 
     // Mark as read
-    await supabase
+    const { error: markErr } = await supabase
       .from('messages')
       .update({ is_read: true })
       .eq('agent_id', agentId)
       .eq('contact_id', contactId)
       .eq('direction', 'inbound')
       .eq('is_read', false)
+    
+    if (!markErr) {
+      window.dispatchEvent(new CustomEvent('unread-updated'))
+    }
   }, [agentId, contactId])
 
   useEffect(() => { fetchMessages() }, [fetchMessages])
