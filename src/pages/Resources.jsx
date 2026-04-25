@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Tabs from '../components/ui/Tabs'
 import PortfolioProjects from './PortfolioProjects'
 import ResourceDrive from './ResourceDrive'
+import AutomationManager from '../components/resources/AutomationManager'
 
 export default function Resources() {
   const [activeTab, setActiveTab] = useState('drive')
@@ -21,7 +22,8 @@ export default function Resources() {
         <Tabs
           tabs={[
             { value: 'drive', label: 'Archivos & Documentos' },
-            { value: 'portfolio', label: 'Portafolio' }
+            { value: 'portfolio', label: 'Portafolio' },
+            { value: 'automation', label: 'Automatizaciones' }
           ]}
           activeTab={activeTab}
           onChange={setActiveTab}
@@ -31,6 +33,7 @@ export default function Resources() {
       <div className="flex-1 min-h-0 overflow-y-auto">
         {activeTab === 'drive' && <ResourceDrive />}
         {activeTab === 'portfolio' && <PortfolioProjects hideHeader={true} />}
+        {activeTab === 'automation' && <AutomationManager />}
       </div>
     </div>
   )

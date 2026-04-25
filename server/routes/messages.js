@@ -70,7 +70,37 @@ router.post('/inbound', async (req, res) => {
       return sendError(res, 'Failed to save message', 500)
     }
 
-    // 4. Cancel any pending follow-up for this contact if they replied
+    // 4. Apply Automation Rules (Keywords -> Labels)
+    try {
+      const lowerMsg = (message || '').toLowerCase()
+      const { data: rules } = await supabase.from('automation_rules').select('keyword, label_id')
+      
+      if (rules && rules.length > 0) {
+        for (const rule of rules) {
+          if (lowerMsg.includes(rule.keyword.toLowerCase())) {
+            // Check if label already exists for this contact to avoid duplicates
+            const { data: existing } = await supabase
+              .from('contact_labels')
+              .select('*')
+              .eq('contact_id', contact.id)
+              .eq('label_id', rule.label_id)
+              .maybeSingle()
+            
+            if (!existing) {
+              await supabase.from('contact_labels').insert({
+                contact_id: contact.id,
+                label_id: rule.label_id
+              })
+              console.log(`[AUTOMATION] Applied label ${rule.label_id} to contact ${contact.id} due to keyword: ${rule.keyword}`)
+            }
+          }
+        }
+      }
+    } catch (autoErr) {
+      console.error('[AUTOMATION] Error applying rules:', autoErr)
+    }
+
+    // 5. Cancel any pending follow-up for this contact if they replied
     await safeDb(() => 
       supabase
         .from('follow_ups')
@@ -112,6 +142,22 @@ router.get('/inbound', async (req, res) => {
         content: message || '', media_type: 'text', timestamp: timestamp || new Date().toISOString(), is_read: false,
       })
     )
+    
+    // 4. Apply Automation Rules
+    try {
+      const lowerMsg = (message || '').toLowerCase()
+      const { data: rules } = await supabase.from('automation_rules').select('keyword, label_id')
+      if (rules) {
+        for (const rule of rules) {
+          if (lowerMsg.includes(rule.keyword.toLowerCase())) {
+            await supabase.from('contact_labels').upsert({
+              contact_id: contact.id,
+              label_id: rule.label_id
+            }, { onConflict: 'contact_id,label_id' })
+          }
+        }
+      }
+    } catch (err) { console.error('[AUTOMATION] Error:', err) }
     
     return sendSuccess(res)
   } catch (err) { return sendError(res, err) }
