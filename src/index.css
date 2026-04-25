@@ -38,7 +38,7 @@
   --color-warning-500: #f59e0b;
   --color-danger-500: #ef4444;
 
-  --font-family-sans: 'Inter', system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
 }
 
 /* Global styles */
@@ -62,7 +62,7 @@
 }
 
 body {
-  font-family: var(--font-family-sans);
+  font-family: var(--font-sans);
   background-color: var(--color-surface-950);
   color: var(--color-surface-100);
 }
