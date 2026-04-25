@@ -7,6 +7,15 @@ const AGENT_VIDEO_LINKS = {
   gym: 'youtube.com/shorts/L0VKAk4YTb0',
 }
 
+const VIDEO_RECURRING_MESSAGES = [
+  "Hola como estas? pudiste ver la info?",
+  "Buenas como va la semana, queria saber si pudiste ver lo que te pasamos",
+  "Hola! Paso por acá para saber si tuviste oportunidad de ver el video",
+  "¿Qué tal? Cualquier duda que tengas sobre el video me avisás",
+  "Hola, ¿pudiste ver el video que te envié el otro día?",
+  "Buenas, ¿alguna duda con el video informativo?"
+]
+
 const router = Router()
 
 // POST /api/messages/inbound — receive inbound message from n8n / Evolution API
@@ -240,10 +249,11 @@ router.post('/followups/trigger', async (req, res) => {
     // 2. Trigger webhook for each due follow-up
     for (const fu of dueFollowUps) {
       try {
-        if (fu.type === 'video') {
-          // SEGUIMIENTO 2: Two-step sequence
+        let success = false
+        if (fu.type === 'video' || fu.type === 'video_recurring') {
+          // SEGUIMIENTO 2 & 3: Two-step sequence
           // 1. Abrir ventana 24h
-          await fetch('https://automation8n.fluxia.site/webhook/86b4d2df-5fea-40c8-a121-26c51a92300c', {
+          const r1 = await fetch('https://automation8n.fluxia.site/webhook/86b4d2df-5fea-40c8-a121-26c51a92300c', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -253,20 +263,25 @@ router.post('/followups/trigger', async (req, res) => {
           })
 
           // 2. Send follow-up message
-          await fetch('https://automation8n.fluxia.site/webhook/a56c59a0-7b5e-4196-878f-130d2098fcd5', {
+          const msg = fu.type === 'video' 
+            ? "Como estas? pudiste ver el video que te mande?"
+            : VIDEO_RECURRING_MESSAGES[Math.floor(Math.random() * VIDEO_RECURRING_MESSAGES.length)]
+
+          const r2 = await fetch('https://automation8n.fluxia.site/webhook/a56c59a0-7b5e-4196-878f-130d2098fcd5', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               phone: fu.contacts?.phone,
               agent_slug: fu.agents?.slug,
               contact_name: fu.contacts?.name,
-              message: "Como estas? pudiste ver el video que te mande?",
+              message: msg,
               media_type: 'text'
             })
           })
+          success = r1.ok && r2.ok
         } else {
           // DEFAULT SEGUIMIENTO (Seguimientos 1)
-          await fetch('https://automation8n.fluxia.site/webhook/f6cc20e3-267d-4e80-af86-da9bfe0d3608', {
+          const response = await fetch('https://automation8n.fluxia.site/webhook/f6cc20e3-267d-4e80-af86-da9bfe0d3608', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -276,9 +291,10 @@ router.post('/followups/trigger', async (req, res) => {
               follow_up_id: fu.id
             })
           })
+          success = response.ok
         }
 
-        if (response.ok) {
+        if (success) {
           // 3. Mark as followed_up
           await safeDb(() => 
             supabase
@@ -286,6 +302,24 @@ router.post('/followups/trigger', async (req, res) => {
               .update({ status: 'followed_up', updated_at: new Date().toISOString() })
               .eq('id', fu.id)
           )
+
+          // 4. Schedule next recurrence if it's a video follow-up
+          if (fu.type === 'video' || fu.type === 'video_recurring') {
+            const nextSchedule = new Date()
+            nextSchedule.setHours(nextSchedule.getHours() + 23)
+            
+            await safeDb(() => 
+              supabase
+                .from('follow_ups')
+                .insert({
+                  contact_id: fu.contact_id,
+                  agent_id: fu.agent_id,
+                  status: 'pending',
+                  type: 'video_recurring',
+                  scheduled_at: nextSchedule.toISOString()
+                })
+            )
+          }
           
           triggeredCount++
         }

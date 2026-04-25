@@ -5,23 +5,32 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY // using publishable key as anon key
+const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY 
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-async function checkSchema() {
-  const { data, error } = await supabase
-    .from('follow_ups')
+async function checkLabels() {
+  const { data: labels, error: lError } = await supabase
+    .from('labels')
     .select('*')
-    .limit(1)
   
-  if (error) {
-    console.error('Error fetching follow_ups:', error)
+  if (lError) {
+    console.error('Error fetching labels:', lError)
   } else {
-    console.log('Follow-up record:', data[0])
-    console.log('Columns:', Object.keys(data[0] || {}))
+    console.log('Labels:', labels)
+  }
+
+  const { data: contactLabels, error: clError } = await supabase
+    .from('contact_labels')
+    .select('*')
+    .limit(5)
+  
+  if (clError) {
+    console.error('Error fetching contact_labels:', clError)
+  } else {
+    console.log('Contact Labels sample:', contactLabels)
   }
 }
 
-checkSchema()
+checkLabels()
 

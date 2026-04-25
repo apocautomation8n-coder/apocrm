@@ -50,8 +50,8 @@ export default function FollowUps({ hideHeader = false }) {
     if (!confirm('¿Quieres disparar el seguimiento ahora mismo?')) return
     
     try {
-      if (fu.type === 'video') {
-        // SEGUIMIENTO 2: Two-step sequence
+      if (fu.type === 'video' || fu.type === 'video_recurring') {
+        // SEGUIMIENTO 2 & 3: Two-step sequence
         // 1. Abrir ventana 24h
         const resp1 = await fetch('https://automation8n.fluxia.site/webhook/86b4d2df-5fea-40c8-a121-26c51a92300c', {
           method: 'POST',
@@ -65,6 +65,19 @@ export default function FollowUps({ hideHeader = false }) {
         if (!resp1.ok) throw new Error('Error al abrir ventana 24h')
 
         // 2. Send follow-up message
+        const VIDEO_RECURRING_MESSAGES = [
+          "Hola como estas? pudiste ver la info?",
+          "Buenas como va la semana, queria saber si pudiste ver lo que te pasamos",
+          "Hola! Paso por acá para saber si tuviste oportunidad de ver el video",
+          "¿Qué tal? Cualquier duda que tengas sobre el video me avisás",
+          "Hola, ¿pudiste ver el video que te envié el otro día?",
+          "Buenas, ¿alguna duda con el video informativo?"
+        ]
+
+        const msg = fu.type === 'video'
+          ? "Como estas? pudiste ver el video que te mande?"
+          : VIDEO_RECURRING_MESSAGES[Math.floor(Math.random() * VIDEO_RECURRING_MESSAGES.length)]
+
         const resp2 = await fetch('https://automation8n.fluxia.site/webhook/a56c59a0-7b5e-4196-878f-130d2098fcd5', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -72,7 +85,7 @@ export default function FollowUps({ hideHeader = false }) {
             phone: fu.contacts?.phone,
             agent_slug: fu.agents?.slug,
             contact_name: fu.contacts?.name,
-            message: "Como estas? pudiste ver el video que te mande?",
+            message: msg,
             media_type: 'text'
           })
         })
@@ -134,7 +147,10 @@ export default function FollowUps({ hideHeader = false }) {
 
   const getStatusLabel = (status) => {
     switch (status) {
-      case 'pending': return type === 'video' ? 'Pendiente (Esperando 2 días)' : 'Pendiente (Esperando 23h)'
+      case 'pending': 
+        if (type === 'video') return 'Pendiente (Esperando 2 días)'
+        if (type === 'video_recurring') return 'Pendiente (Recurrente 23h)'
+        return 'Pendiente (Esperando 23h)'
       case 'followed_up': return 'Seguimiento Enviado'
       case 'responded': return 'Respondido (Cancelado)'
       case 'canceled': return 'Cancelado Manual'
@@ -165,7 +181,8 @@ export default function FollowUps({ hideHeader = false }) {
         <div className="flex gap-2 bg-surface-900/50 p-1 rounded-xl w-max border border-surface-800/60">
           {[
             { id: 'default', label: 'Seguimientos 1 (23h)' },
-            { id: 'video', label: 'Seguimientos 2 (Video)' }
+            { id: 'video', label: 'Seguimientos 2 (Video)' },
+            { id: 'video_recurring', label: 'Seguimientos 3 (Recurrente)' }
           ].map(t => (
             <button
               key={t.id}
