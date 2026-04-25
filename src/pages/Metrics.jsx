@@ -27,6 +27,10 @@ export default function Metrics({ hideHeader = false }) {
     sent: 0,
     responded: 0
   })
+  const [followUp2Metrics, setFollowUp2Metrics] = useState({
+    sent: 0,
+    responded: 0
+  })
 
   const [videoLinkCount, setVideoLinkCount] = useState(0)
 
@@ -151,14 +155,20 @@ export default function Metrics({ hideHeader = false }) {
 
     const { data } = await supabase
       .from('follow_ups')
-      .select('status')
+      .select('status, type')
       .eq('agent_id', agent.id)
       .in('status', ['followed_up', 'responded'])
 
     if (data) {
-      const sent = data.filter(r => r.status === 'followed_up').length
-      const responded = data.filter(r => r.status === 'responded').length
-      setFollowUpMetrics({ sent, responded })
+      // Type Default (Seguimientos 1)
+      const sent1 = data.filter(r => r.type === 'default' && r.status === 'followed_up').length
+      const responded1 = data.filter(r => r.type === 'default' && r.status === 'responded').length
+      setFollowUpMetrics({ sent: sent1, responded: responded1 })
+
+      // Type Video (Seguimientos 2)
+      const sent2 = data.filter(r => r.type === 'video' && r.status === 'followed_up').length
+      const responded2 = data.filter(r => r.type === 'video' && r.status === 'responded').length
+      setFollowUp2Metrics({ sent: sent2, responded: responded2 })
     }
   }
 
@@ -406,23 +416,51 @@ export default function Metrics({ hideHeader = false }) {
 
       {/* Video Link Metrics Section */}
       {AGENT_VIDEO_LINKS[activeAgent] && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Video size={16} className="text-rose-400" />
-            <h2 className="text-sm font-semibold text-surface-300 uppercase tracking-wider">Video Enviado</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-2xl border bg-surface-900/60 border-surface-800/60">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-surface-400">Links de Video Enviados</span>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-500/10">
-                  <Video size={16} className="text-rose-400" />
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Video size={16} className="text-rose-400" />
+              <h2 className="text-sm font-semibold text-surface-300 uppercase tracking-wider">Seguimiento 2 (Video)</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl border bg-surface-900/60 border-surface-800/60">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-surface-400">Links de Video Enviados</span>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-500/10">
+                    <Video size={16} className="text-rose-400" />
+                  </div>
                 </div>
+                <div className="text-3xl font-bold text-surface-100">{videoLinkCount}</div>
+                <p className="text-[11px] text-surface-500 mt-1">
+                  Veces que se envió el link de YouTube
+                </p>
               </div>
-              <div className="text-3xl font-bold text-surface-100">{videoLinkCount}</div>
-              <p className="text-[11px] text-surface-500 mt-1">
-                Veces que se envió el link de YouTube a prospectos
-              </p>
+
+              <div className="p-4 rounded-2xl border bg-surface-900/60 border-surface-800/60">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-surface-400">Seguimientos 2 Enviados</span>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-violet-500/10">
+                    <History size={16} className="text-violet-400" />
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-surface-100">{followUp2Metrics.sent}</div>
+                <p className="text-[11px] text-surface-500 mt-1">Recordatorios de video disparados</p>
+              </div>
+
+              <div className="p-4 rounded-2xl border bg-surface-900/60 border-surface-800/60">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-surface-400">Respondieron tras Seguimiento 2</span>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-500/10">
+                    <CheckCircle2 size={16} className="text-teal-400" />
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-surface-100">{followUp2Metrics.responded}</div>
+                <p className="text-[11px] text-surface-500 mt-1">
+                  {followUp2Metrics.sent > 0
+                    ? `${Math.round((followUp2Metrics.responded / followUp2Metrics.sent) * 100)}% de conversión`
+                    : 'Esperando disparos'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
