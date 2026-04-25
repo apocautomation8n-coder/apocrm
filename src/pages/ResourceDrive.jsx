@@ -29,6 +29,10 @@ export default function ResourceDrive() {
   // Viewer state
   const [viewingFile, setViewingFile] = useState(null)
   
+  // Drag and Drop state
+  const [draggingFileId, setDraggingFileId] = useState(null)
+  const [dragOverFolderId, setDragOverFolderId] = useState(null)
+  
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -168,6 +172,41 @@ export default function ResourceDrive() {
     setIsUploading(false)
   }
 
+  const handleDragStart = (e, fileId) => {
+    e.dataTransfer.setData('fileId', fileId)
+    setDraggingFileId(fileId)
+  }
+
+  const handleDragOver = (e, folderId) => {
+    e.preventDefault()
+    setDragOverFolderId(folderId)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverFolderId(null)
+  }
+
+  const handleDrop = async (e, folderId) => {
+    e.preventDefault()
+    setDragOverFolderId(null)
+    setDraggingFileId(null)
+    
+    const fileId = e.dataTransfer.getData('fileId')
+    if (!fileId) return
+
+    const { error } = await supabase
+      .from('resource_files')
+      .update({ folder_id: folderId })
+      .eq('id', fileId)
+      
+    if (error) {
+      toast.error('Error moviendo archivo')
+    } else {
+      toast.success('Archivo movido')
+      fetchContent(currentFolderId)
+    }
+  }
+
   const handleDeleteFolder = async (id, e) => {
     e.stopPropagation()
     if (!window.confirm('¿Seguro que deseas eliminar esta carpeta y todo su contenido?')) return
@@ -262,11 +301,14 @@ export default function ResourceDrive() {
             {folders.map(folder => (
               <Card 
                 key={folder.id} 
-                className="p-4 flex items-center justify-between cursor-pointer hover:border-primary-500/50 hover:bg-surface-800/50 transition-colors group"
+                className={`p-4 flex items-center justify-between cursor-pointer hover:border-primary-500/50 hover:bg-surface-800/50 transition-all group ${dragOverFolderId === folder.id ? 'border-primary-500 bg-primary-500/10 scale-[1.02]' : ''}`}
                 onClick={() => setCurrentFolderId(folder.id)}
+                onDragOver={(e) => handleDragOver(e, folder.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, folder.id)}
               >
                 <div className="flex items-center gap-3 overflow-visible relative group/tip min-w-0">
-                  <div className="p-2 bg-primary-500/10 rounded-lg text-primary-400 shrink-0">
+                  <div className={`p-2 rounded-lg shrink-0 transition-colors ${dragOverFolderId === folder.id ? 'bg-primary-500 text-white' : 'bg-primary-500/10 text-primary-400'}`}>
                     <Folder size={20} />
                   </div>
                   <span className="font-medium text-surface-100 truncate min-w-0 flex-1">{folder.name}</span>
@@ -289,8 +331,11 @@ export default function ResourceDrive() {
             {files.map(file => (
               <Card 
                 key={file.id} 
-                className="p-4 flex items-start justify-between cursor-pointer hover:border-surface-600 hover:bg-surface-800/50 transition-colors group relative overflow-hidden"
+                className={`p-4 flex items-start justify-between cursor-pointer hover:border-surface-600 hover:bg-surface-800/50 transition-all group relative overflow-hidden ${draggingFileId === file.id ? 'opacity-40 scale-95 border-dashed border-primary-500/50' : ''}`}
                 onClick={() => setViewingFile(file)}
+                draggable
+                onDragStart={(e) => handleDragStart(e, file.id)}
+                onDragEnd={() => setDraggingFileId(null)}
               >
                 <div className="flex flex-col gap-3 w-full">
                   <div className="flex items-center justify-between">
