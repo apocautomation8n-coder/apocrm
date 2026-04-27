@@ -51,16 +51,22 @@ export function getPhoneVariants(phone) {
   }
 }
 
-export function useAgents() {
+export function useAgents(type = null) {
   const [agents, setAgents] = useState([])
   const [loading, setLoading] = useState(true)
 
   const fetchAgents = useCallback(async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from('agents')
       .select('*')
       .eq('is_active', true)
       .order('created_at')
+    
+    if (type) {
+      query = query.eq('type', type)
+    }
+
+    const { data, error } = await query
     if (error) {
       toast.error('Error cargando agentes')
       console.error(error)
@@ -68,7 +74,7 @@ export function useAgents() {
       setAgents(data)
     }
     setLoading(false)
-  }, [])
+  }, [type])
 
   useEffect(() => { fetchAgents() }, [fetchAgents])
 
@@ -85,10 +91,10 @@ export function useAgents() {
     }
   }
 
-  const addAgent = async (name, slug) => {
+  const addAgent = async (name, slug, agentType = 'outbound') => {
     const { data, error } = await supabase
       .from('agents')
-      .insert({ name, slug })
+      .insert({ name, slug, type: agentType })
       .select()
       .single()
     if (error) {

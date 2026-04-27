@@ -15,7 +15,7 @@ import {
 import Button from '../components/ui/Button'
 import toast from 'react-hot-toast'
 
-export default function FollowUps({ hideHeader = false }) {
+export default function FollowUps({ hideHeader = false, agentType = 'outbound' }) {
   const [followUps, setFollowUps] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('pending') // pending, followed_up, responded, canceled
@@ -23,18 +23,19 @@ export default function FollowUps({ hideHeader = false }) {
 
   const fetchFollowUps = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    let query = supabase
       .from('follow_ups')
       .select(`
         *,
         contacts (name, phone),
-        agents (name, slug)
+        agents!inner (name, slug, type)
       `)
       .eq('status', filter)
       .eq('type', type)
+      .eq('agents.type', agentType)
       .order('scheduled_at', { ascending: filter === 'pending' })
     
-    if (error) {
+    const { data, error } = await query
       toast.error('Error cargando seguimientos')
     } else {
       setFollowUps(data || [])

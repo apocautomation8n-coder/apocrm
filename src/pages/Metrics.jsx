@@ -9,7 +9,7 @@ import toast from 'react-hot-toast'
 
 // Dynamic agents will be fetched from the database
 
-export default function Metrics({ hideHeader = false }) {
+export default function Metrics({ hideHeader = false, agentType = 'outbound' }) {
   const [agents, setAgents] = useState([])
   const [activeAgent, setActiveAgent] = useState('')
   const [isEditing, setIsEditing] = useState(false)
@@ -50,7 +50,11 @@ export default function Metrics({ hideHeader = false }) {
 
   // 1. Fetch Agents List
   const fetchAgents = async () => {
-    const { data, error } = await supabase.from('agents').select('*').order('name')
+    const { data, error } = await supabase
+      .from('agents')
+      .select('*')
+      .eq('type', agentType)
+      .order('name')
     if (!error && data) {
       setAgents(data)
       if (data.length > 0 && !activeAgent) {

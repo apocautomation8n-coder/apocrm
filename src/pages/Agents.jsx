@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { MessageSquare, MessageCircle } from 'lucide-react'
 import OutboundAgents from './OutboundAgents'
+import InboundAgents from './InboundAgents'
 import Tabs from '../components/ui/Tabs'
 
 export default function Agents() {
@@ -59,14 +60,8 @@ export default function Agents() {
           </div>
         )}
         {activeTab === 'inbound' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
-            <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
-              <MessageCircle size={32} className="text-emerald-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-surface-100 mb-2">Agentes Inbound</h2>
-            <p className="text-surface-400 max-w-md">
-              Esta sección está en construcción. Próximamente podrás gestionar aquí los chats y métricas de tus agentes inbound.
-            </p>
+          <div className="absolute inset-0">
+            <InboundAgents hideHeader={true} />
           </div>
         )}
       </div>
