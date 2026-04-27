@@ -15,7 +15,7 @@ import { useLabels } from '../hooks/useMessages'
 import toast from 'react-hot-toast'
 
 export default function OutboundAgents() {
-  const { agents, loading: agentsLoading, toggleBot, addAgent, updateAgent } = useAgents()
+  const { agents, loading: agentsLoading, toggleBot, addAgent, updateAgent } = useAgents('outbound')
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [selectedContact, setSelectedContact] = useState(null)
   const [showContactPanel, setShowContactPanel] = useState(true)
@@ -184,7 +184,7 @@ export default function OutboundAgents() {
   if (agentsLoading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+        <div className="w-8 h-8 rounded-full border-2 border-primary-500 border-t-transparent animate-spin" />
       </div>
     )
   }
@@ -205,7 +205,7 @@ export default function OutboundAgents() {
                 px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap
                 transition-all duration-200 cursor-pointer
                 ${activeAgent?.id === agent.id
-                  ? 'bg-indigo-600/15 text-indigo-400'
+                  ? 'bg-primary-600/15 text-primary-400'
                   : 'text-surface-400 hover:bg-surface-800/50 hover:text-surface-200'
                 }
               `}
@@ -223,7 +223,7 @@ export default function OutboundAgents() {
           {activeAgent && (
             <button
               onClick={openEditModal}
-              className="p-2 text-surface-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-all cursor-pointer"
+              className="p-2 text-surface-500 hover:text-primary-400 hover:bg-primary-500/10 rounded-lg transition-all cursor-pointer"
               title="Editar Agente"
             >
               <Edit2 size={16} />
@@ -256,12 +256,12 @@ export default function OutboundAgents() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar..."
-                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-surface-800/60 border border-surface-700/30 text-surface-200 placeholder-surface-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/40 transition-all"
+                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-surface-800/60 border border-surface-700/30 text-surface-200 placeholder-surface-500 focus:outline-none focus:ring-1 focus:ring-primary-500/40 transition-all"
                 />
               </div>
               <button
                 onClick={() => setShowAddContact(true)}
-                className="p-2 text-indigo-400 hover:text-indigo-300 bg-indigo-600/10 hover:bg-indigo-600/20 rounded-lg transition-all cursor-pointer shrink-0"
+                className="p-2 text-primary-400 hover:text-primary-300 bg-primary-600/10 hover:bg-primary-600/20 rounded-lg transition-all cursor-pointer shrink-0"
                 title="Nueva conversación"
               >
                 <Plus size={18} />
@@ -282,7 +282,7 @@ export default function OutboundAgents() {
                 className={`
                   px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap transition-all border
                   ${selectedLabelId === 'all' 
-                    ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/40' 
+                    ? 'bg-primary-600/20 text-primary-400 border-primary-500/40' 
                     : 'bg-surface-800/40 text-surface-500 border-surface-700/30 hover:text-surface-300'
                   }
                 `}
@@ -396,7 +396,7 @@ export default function OutboundAgents() {
                 placeholder="Escribe un nombre o teléfono..."
                 value={contactSearch}
                 onChange={(e) => setContactSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-surface-800/60 border border-surface-700/30 text-surface-200 placeholder-surface-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/40 transition-all"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-surface-800/60 border border-surface-700/30 text-surface-200 placeholder-surface-500 focus:outline-none focus:ring-1 focus:ring-primary-500/40 transition-all"
               />
             </div>
             
@@ -432,7 +432,7 @@ export default function OutboundAgents() {
                         setNewContactName(c.name || '')
                         setContactSearch('')
                       }}
-                      className="w-full px-3 py-2 text-left text-sm text-surface-300 hover:bg-indigo-500/10 hover:text-indigo-400 transition-colors flex flex-col"
+                      className="w-full px-3 py-2 text-left text-sm text-surface-300 hover:bg-primary-500/10 hover:text-primary-400 transition-colors flex flex-col"
                     >
                       <span className="font-medium">{c.name || 'Sin nombre'}</span>
                       <span className="text-[10px] text-surface-500">{c.phone}</span>

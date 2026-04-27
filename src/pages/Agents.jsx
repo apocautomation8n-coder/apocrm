@@ -23,14 +23,14 @@ export default function Agents() {
               className={`
                 flex items-center gap-2 px-2 pb-3 text-sm font-medium transition-all relative cursor-pointer
                 ${activeTab === 'outbound' 
-                  ? 'text-indigo-400' 
+                  ? 'text-primary-400' 
                   : 'text-surface-500 hover:text-surface-300'}
               `}
             >
               <MessageSquare size={16} />
               Outbound
               {activeTab === 'outbound' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 animate-fade-in" />
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500 animate-fade-in" />
               )}
             </button>
             <button
