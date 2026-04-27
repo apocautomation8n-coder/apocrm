@@ -91,22 +91,23 @@ export function useAgents(type = null) {
     }
   }
 
-  const addAgent = async (name, slug, agentType = 'outbound') => {
+  const updateAgent = async (agentId, updates) => {
     const { data, error } = await supabase
       .from('agents')
-      .insert({ name, slug, type: agentType })
+      .update(updates)
+      .eq('id', agentId)
       .select()
       .single()
     if (error) {
-      toast.error('Error creando agente')
+      toast.error('Error actualizando agente')
     } else {
-      setAgents(prev => [...prev, data])
-      toast.success('Agente creado')
+      setAgents(prev => prev.map(a => a.id === agentId ? data : a))
+      toast.success('Agente actualizado')
     }
     return { data, error }
   }
 
-  return { agents, loading, toggleBot, addAgent, refetch: fetchAgents }
+  return { agents, loading, toggleBot, addAgent, updateAgent, refetch: fetchAgents }
 }
 
 export function useConversations(agentId) {
