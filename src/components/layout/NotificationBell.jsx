@@ -4,7 +4,7 @@ import { useNotifications, useTeamMembers } from '../../hooks/useTasks'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-export default function NotificationBell() {
+export default function NotificationBell({ isSidebar = false, collapsed = false }) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
   
@@ -30,46 +30,62 @@ export default function NotificationBell() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <div className="flex items-center gap-3">
-        {/* Member Selector */}
-        <div className="relative shrink-0 group">
-          <select 
-            value={currentMemberId}
-            onChange={(e) => setCurrentMemberId(e.target.value)}
-            className="w-24 bg-surface-800 border border-surface-700/50 text-surface-400 text-[10px] font-bold uppercase tracking-wider pl-2 pr-6 py-1.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500/30 transition-all cursor-pointer appearance-none hover:bg-surface-700/50 hover:text-surface-200"
-          >
-            <option value="all">TODOS</option>
-            {members.map(m => (
-              <option key={m.id} value={m.id}>{m.name.toUpperCase()}</option>
-            ))}
-          </select>
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-surface-500 group-hover:text-primary-400">
-            <ChevronRight size={10} className="rotate-90" strokeWidth={3} />
+      <div className={`flex items-center ${isSidebar ? 'flex-col gap-2' : 'gap-3'}`}>
+        {/* Member Selector - Only show if not sidebar OR if not collapsed in sidebar */}
+        {(!isSidebar || !collapsed) && (
+          <div className="relative shrink-0 group">
+            <select 
+              value={currentMemberId}
+              onChange={(e) => setCurrentMemberId(e.target.value)}
+              className={`
+                bg-surface-800 border border-surface-700/50 text-surface-400 text-[10px] font-bold uppercase tracking-wider pl-2 pr-6 py-1.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500/30 transition-all cursor-pointer appearance-none hover:bg-surface-700/50 hover:text-surface-200
+                ${isSidebar ? 'w-full' : 'w-24'}
+              `}
+            >
+              <option value="all">TODOS</option>
+              {members.map(m => (
+                <option key={m.id} value={m.id}>{m.name.toUpperCase()}</option>
+              ))}
+            </select>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-surface-500 group-hover:text-primary-400">
+              <ChevronRight size={10} className="rotate-90" strokeWidth={3} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Bell Button */}
         <button
           disabled={currentMemberId === 'all'}
           onClick={() => setIsOpen(!isOpen)}
           className={`
-            relative p-2 rounded-xl transition-all cursor-pointer shrink-0
+            relative p-2 rounded-xl transition-all cursor-pointer shrink-0 group
             ${isOpen ? 'bg-primary-600/20 text-primary-400' : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800/60'}
             ${currentMemberId === 'all' ? 'opacity-30 grayscale cursor-not-allowed' : ''}
+            ${isSidebar && !collapsed ? 'flex items-center gap-3 w-full px-3' : ''}
           `}
           title={currentMemberId === 'all' ? 'Selecciona un perfil para ver notificaciones' : 'Notificaciones'}
         >
-          <Bell size={20} />
-          {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-surface-950">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
+          <div className="relative">
+            <Bell size={20} className={`transition-transform duration-200 ${isOpen ? 'scale-110' : 'group-hover:scale-110'}`} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-surface-950">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </div>
+          {isSidebar && !collapsed && (
+            <span className="text-[14px] font-medium truncate">Notificaciones</span>
           )}
         </button>
       </div>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 max-h-[480px] bg-surface-900 border border-surface-800 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-150">
+        <div className={`
+          absolute w-80 max-h-[480px] bg-surface-900 border border-surface-800 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-150
+          ${isSidebar 
+            ? 'left-full bottom-0 ml-4 origin-bottom-left mb-[-10px]' 
+            : 'right-0 top-full mt-2 origin-top-right'}
+        `}>
           {/* Header */}
           <div className="p-4 border-b border-surface-800/60 bg-surface-900/50 flex items-center justify-between">
             <h3 className="text-sm font-bold text-surface-100 flex items-center gap-2">

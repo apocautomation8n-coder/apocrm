@@ -5,7 +5,6 @@ import TaskBoard from '../components/tasks/TaskBoard'
 import TaskModal from '../components/tasks/TaskModal'
 import TeamManagementModal from '../components/tasks/TeamManagementModal'
 import Button from '../components/ui/Button'
-import NotificationBell from '../components/layout/NotificationBell'
 
 export default function Tasks() {
   const [view, setView] = useState('day') // 'day' | 'status'
@@ -105,8 +104,6 @@ export default function Tasks() {
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <NotificationBell />
-          <div className="w-[1px] h-6 bg-surface-800 mx-1" />
           <button 
             onClick={() => setIsTeamModalOpen(true)}
             className="p-2 rounded-xl bg-surface-800/60 border border-surface-700/30 text-surface-400 hover:text-primary-400 hover:border-primary-500/30 transition-all flex items-center gap-2 group"

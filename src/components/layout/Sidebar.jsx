@@ -13,8 +13,10 @@ import {
   ChevronRight,
   CheckSquare,
   ShieldCheck,
-  FolderOpen
+  FolderOpen,
+  Bell
 } from 'lucide-react'
+import NotificationBell from './NotificationBell'
 
 const navItems = [
   { to: '/agents',    icon: MessageSquare, label: 'Agentes', badgeKey: 'unread' },
@@ -109,6 +111,11 @@ export default function Sidebar() {
             <p className="text-[10px] text-primary-400/90 font-bold tracking-[0.2em] leading-none uppercase">AUTOMATION</p>
           </div>
         )}
+      </div>
+
+      {/* Global Notifications */}
+      <div className="px-4 py-2 border-b border-surface-800/40">
+        <NotificationBell isSidebar={true} collapsed={collapsed} />
       </div>
 
       {/* Navigation */}
