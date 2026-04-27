@@ -36,6 +36,8 @@ export default function FollowUps({ hideHeader = false, agentType = 'outbound' }
       .order('scheduled_at', { ascending: filter === 'pending' })
     
     const { data, error } = await query
+    
+    if (error) {
       toast.error('Error cargando seguimientos')
     } else {
       setFollowUps(data || [])
