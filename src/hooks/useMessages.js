@@ -91,6 +91,21 @@ export function useAgents(type = null) {
     }
   }
 
+  const addAgent = async (name, slug, agentType = 'outbound') => {
+    const { data, error } = await supabase
+      .from('agents')
+      .insert({ name, slug, type: agentType })
+      .select()
+      .single()
+    if (error) {
+      toast.error('Error creando agente')
+    } else {
+      setAgents(prev => [...prev, data])
+      toast.success('Agente creado')
+    }
+    return { data, error }
+  }
+
   const updateAgent = async (agentId, updates) => {
     const { data, error } = await supabase
       .from('agents')
