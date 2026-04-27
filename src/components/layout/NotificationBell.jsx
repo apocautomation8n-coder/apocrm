@@ -30,40 +30,18 @@ export default function NotificationBell({ isSidebar = false, collapsed = false 
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <div className={`flex items-center ${isSidebar ? 'flex-col gap-2' : 'gap-3'}`}>
-        {/* Member Selector - Only show if not sidebar OR if not collapsed in sidebar */}
-        {(!isSidebar || !collapsed) && (
-          <div className="relative shrink-0 group">
-            <select 
-              value={currentMemberId}
-              onChange={(e) => setCurrentMemberId(e.target.value)}
-              className={`
-                bg-surface-800 border border-surface-700/50 text-surface-400 text-[10px] font-bold uppercase tracking-wider pl-2 pr-6 py-1.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500/30 transition-all cursor-pointer appearance-none hover:bg-surface-700/50 hover:text-surface-200
-                ${isSidebar ? 'w-full' : 'w-24'}
-              `}
-            >
-              <option value="all">TODOS</option>
-              {members.map(m => (
-                <option key={m.id} value={m.id}>{m.name.toUpperCase()}</option>
-              ))}
-            </select>
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-surface-500 group-hover:text-primary-400">
-              <ChevronRight size={10} className="rotate-90" strokeWidth={3} />
-            </div>
-          </div>
-        )}
-
-        {/* Bell Button */}
+      <div className="flex items-center">
+        {/* Bell Button styled as NavItem if in sidebar */}
         <button
-          disabled={currentMemberId === 'all'}
           onClick={() => setIsOpen(!isOpen)}
           className={`
-            relative p-2 rounded-xl transition-all cursor-pointer shrink-0 group
-            ${isOpen ? 'bg-primary-600/20 text-primary-400' : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800/60'}
-            ${currentMemberId === 'all' ? 'opacity-30 grayscale cursor-not-allowed' : ''}
-            ${isSidebar && !collapsed ? 'flex items-center gap-3 w-full px-3' : ''}
+            relative transition-all duration-200 cursor-pointer shrink-0 group flex items-center
+            ${isSidebar 
+              ? `w-full gap-3.5 px-3 py-3 rounded-xl ${isOpen ? 'bg-primary-500/15 text-primary-400 shadow-[inset_2px_0_0_0_theme(colors.primary.500)]' : 'text-surface-400 hover:text-surface-100 hover:bg-surface-800/40'}` 
+              : `p-2 rounded-xl ${isOpen ? 'bg-primary-600/20 text-primary-400' : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800/60'}`
+            }
           `}
-          title={currentMemberId === 'all' ? 'Selecciona un perfil para ver notificaciones' : 'Notificaciones'}
+          title="Notificaciones"
         >
           <div className="relative">
             <Bell size={20} className={`transition-transform duration-200 ${isOpen ? 'scale-110' : 'group-hover:scale-110'}`} />
@@ -74,35 +52,56 @@ export default function NotificationBell({ isSidebar = false, collapsed = false 
             )}
           </div>
           {isSidebar && !collapsed && (
-            <span className="text-[14px] font-medium truncate">Notificaciones</span>
+            <span className={`text-[14px] truncate animate-fade-in ${isOpen ? 'font-semibold' : 'font-medium'}`}>
+              Notificaciones
+            </span>
           )}
         </button>
       </div>
 
       {isOpen && (
         <div className={`
-          absolute w-80 max-h-[480px] bg-surface-900 border border-surface-800 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-150
+          absolute w-80 max-h-[520px] bg-surface-900 border border-surface-800 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-150
           ${isSidebar 
-            ? 'left-full bottom-0 ml-4 origin-bottom-left mb-[-10px]' 
+            ? 'left-full top-0 ml-4 origin-top-left' 
             : 'right-0 top-full mt-2 origin-top-right'}
         `}>
           {/* Header */}
-          <div className="p-4 border-b border-surface-800/60 bg-surface-900/50 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-surface-100 flex items-center gap-2">
-              <Bell size={16} className="text-primary-400" />
-              Notificaciones
-              {unreadCount > 0 && <span className="text-[10px] bg-primary-600/20 text-primary-400 px-1.5 py-0.5 rounded-full">{unreadCount} nuevas</span>}
-            </h3>
-            <button
-              onClick={markAllAsRead}
-              className="text-[10px] font-bold uppercase tracking-wider text-primary-400 hover:text-primary-300 transition-colors"
-            >
-              Marcar todo leído
-            </button>
+          <div className="p-4 border-b border-surface-800/60 bg-surface-900/50 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-surface-100 flex items-center gap-2">
+                <Bell size={16} className="text-primary-400" />
+                Notificaciones
+                {unreadCount > 0 && <span className="text-[10px] bg-primary-600/20 text-primary-400 px-1.5 py-0.5 rounded-full">{unreadCount} nuevas</span>}
+              </h3>
+              <button
+                onClick={markAllAsRead}
+                className="text-[10px] font-bold uppercase tracking-wider text-primary-400 hover:text-primary-300 transition-colors"
+              >
+                Marcar todo leído
+              </button>
+            </div>
+
+            {/* Member Selector inside dropdown */}
+            <div className="relative group">
+              <select 
+                value={currentMemberId}
+                onChange={(e) => setCurrentMemberId(e.target.value)}
+                className="w-full bg-surface-800 border border-surface-700/50 text-surface-400 text-[10px] font-bold uppercase tracking-wider pl-3 pr-8 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500/30 transition-all cursor-pointer appearance-none hover:bg-surface-700/50 hover:text-surface-200"
+              >
+                <option value="all">TODOS LOS MIEMBROS</option>
+                {members.map(m => (
+                  <option key={m.id} value={m.id}>{m.name.toUpperCase()}</option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-surface-500 group-hover:text-primary-400">
+                <ChevronRight size={12} className="rotate-90" strokeWidth={3} />
+              </div>
+            </div>
           </div>
 
           {/* List */}
-          <div className="overflow-y-auto max-h-[380px] divide-y divide-surface-800/40 custom-scrollbar">
+          <div className="overflow-y-auto max-h-[340px] divide-y divide-surface-800/40 custom-scrollbar">
             {loading ? (
               <div className="p-10 flex justify-center">
                 <div className="w-6 h-6 rounded-full border-2 border-primary-500 border-t-transparent animate-spin" />

@@ -113,13 +113,9 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* Global Notifications */}
-      <div className="px-4 py-2 border-b border-surface-800/40">
-        <NotificationBell isSidebar={true} collapsed={collapsed} />
-      </div>
-
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+        <NotificationBell isSidebar={true} collapsed={collapsed} />
         {filteredItems.map((item) => (
           <NavLink
             key={item.to}
