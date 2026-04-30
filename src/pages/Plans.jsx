@@ -175,7 +175,7 @@ export default function Plans({ hideHeader = false }) {
   return (
     <div className={`space-y-6 animate-fade-in ${!hideHeader ? 'p-6' : 'py-2'}`}>
       {/* Header */}
-      {!hideHeader && (
+      {!hideHeader ? (
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-surface-100 flex items-center gap-3">
@@ -184,6 +184,13 @@ export default function Plans({ hideHeader = false }) {
           </h1>
           <p className="text-sm text-surface-400 mt-1">Gestión de mantenimientos recurrentes</p>
         </div>
+        <Button onClick={() => { closeModal(); setShowModal(true) }}>
+          <Plus size={16} />
+          Agregar mantenimiento
+        </Button>
+      </div>
+      ) : (
+      <div className="flex justify-end">
         <Button onClick={() => { closeModal(); setShowModal(true) }}>
           <Plus size={16} />
           Agregar mantenimiento
