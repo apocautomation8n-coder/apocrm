@@ -43,7 +43,11 @@ router.get('/check/:phone', async (req, res) => {
         .in('phone', variants)
     )
 
-    return sendSuccess(res, { exists: !!(contacts && contacts.length > 0) })
+    return sendSuccess(res, { 
+      exists: !!(contacts && contacts.length > 0),
+      processedPhone: phone,
+      variants 
+    })
   } catch (err) {
     return sendError(res, err)
   }
