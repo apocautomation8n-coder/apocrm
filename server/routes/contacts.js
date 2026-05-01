@@ -4,12 +4,6 @@ import { sendSuccess, sendError, safeDb, findOrCreateContact, getPhoneVariants, 
 
 const router = Router()
 
-router.get('/debug-check/:phone', (req, res) => {
-  const { phone } = req.laxData
-  const variants = getPhoneVariants(phone)
-  res.json({ laxDataPhone: phone, variants, params: req.params, query: req.query })
-})
-
 // POST /api/contacts — create or update a contact
 router.post('/', async (req, res) => {
   try {
@@ -39,7 +33,7 @@ router.post('/', async (req, res) => {
 // GET /api/contacts/check/:phone — check if a contact exists (returns boolean)
 router.get('/check/:phone', async (req, res) => {
   try {
-    const { phone } = req.laxData
+    const phone = normalizePhone(req.params.phone)
     const variants = getPhoneVariants(phone)
     
     const { data: contacts } = await safeDb(() => 
@@ -58,7 +52,7 @@ router.get('/check/:phone', async (req, res) => {
 // GET /api/contacts/:phone — find a contact by phone
 router.get('/:phone', async (req, res) => {
   try {
-    const { phone } = req.laxData
+    const phone = normalizePhone(req.params.phone)
     const variants = getPhoneVariants(phone)
     
     const { data: contacts, error } = await safeDb(() => 
@@ -72,7 +66,6 @@ router.get('/:phone', async (req, res) => {
       return sendError(res, 'Contact not found', 404)
     }
 
-    // Return first match (if there were duplicates, findOrCreateContact will merge them next time)
     return sendSuccess(res, contacts[0])
   } catch (err) {
     return sendError(res, err)
@@ -82,10 +75,9 @@ router.get('/:phone', async (req, res) => {
 // GET /api/contacts/check-conversation/:phone — check if a conversation exists
 router.get('/check-conversation/:phone', async (req, res) => {
   try {
-    const { phone } = req.laxData
+    const phone = normalizePhone(req.params.phone)
     const variants = getPhoneVariants(phone)
 
-    // 1. Find contact by any phone variant
     const { data: contacts } = await safeDb(() => 
       supabase
         .from('contacts')
@@ -99,7 +91,6 @@ router.get('/check-conversation/:phone', async (req, res) => {
       return sendSuccess(res, { exists: false, hasMessages: false })
     }
 
-    // 2. Check for messages
     const { count } = await safeDb(() => 
       supabase
         .from('messages')
