@@ -8,16 +8,13 @@ import Badge from '../components/ui/Badge'
 import { supabase } from '../lib/supabaseClient'
 
 const VIEW_LABELS = {
-  '/agents': 'Agentes Outbound',
+  '/agents': 'Agentes',
   '/contacts': 'Contactos',
   '/pipeline': 'Pipeline',
   '/tasks': 'Tareas',
   '/calendar': 'Calendario',
-  '/followups': 'Seguimientos',
   '/finance': 'Finanzas',
-  '/plans': 'Mensualidades',
-  '/converter': 'Conversión de Capital',
-  '/portfolio': 'Portafolio',
+  '/resources': 'Recursos',
   '/security': 'Seguridad'
 }
 
@@ -59,14 +56,21 @@ export default function Users({ hideHeader = false }) {
   const handleCreateUser = async (e) => {
     e.preventDefault()
     try {
-      const res = await fetch('/api/users', {
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const res = await fetch(`${apiUrl}/api/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newUser)
       })
       if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || 'Error creating user')
+        let errMessage = 'Error al crear usuario'
+        try {
+          const err = await res.json()
+          errMessage = err.error || errMessage
+        } catch (parseErr) {
+          console.error('Error parsing response:', parseErr)
+        }
+        throw new Error(errMessage)
       }
       setIsModalOpen(false)
       setNewUser({ email: '', password: '', full_name: '', allowed_views: ['/agents', '/contacts'] })
@@ -104,14 +108,21 @@ export default function Users({ hideHeader = false }) {
   const handleDeleteUser = async (id) => {
     if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) return
     try {
-      const res = await fetch(`/api/users?id=${id}`, {
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const res = await fetch(`${apiUrl}/api/users/${id}`, {
         method: 'DELETE'
       })
       if (res.ok) {
         setUsers(users.filter(u => u.id !== id))
       } else {
-        const err = await res.json()
-        throw new Error(err.error || 'Error deleting user')
+        let errMessage = 'Error al eliminar usuario'
+        try {
+          const err = await res.json()
+          errMessage = err.error || errMessage
+        } catch (parseErr) {
+          console.error('Error parsing response:', parseErr)
+        }
+        throw new Error(errMessage)
       }
     } catch (err) {
       alert(err.message)
