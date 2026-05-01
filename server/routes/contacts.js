@@ -4,6 +4,12 @@ import { sendSuccess, sendError, safeDb, findOrCreateContact, getPhoneVariants, 
 
 const router = Router()
 
+router.get('/debug-check/:phone', (req, res) => {
+  const { phone } = req.laxData
+  const variants = getPhoneVariants(phone)
+  res.json({ laxDataPhone: phone, variants, params: req.params, query: req.query })
+})
+
 // POST /api/contacts — create or update a contact
 router.post('/', async (req, res) => {
   try {
