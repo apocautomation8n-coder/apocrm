@@ -242,6 +242,11 @@ export function ultraParser(req, res, next) {
     ...parsedBody
   };
 
+  // If req.body was a string, replace it with the parsed object so subsequent routes can use it
+  if (typeof req.body === 'string' && Object.keys(parsedBody).length > 0) {
+    req.body = parsedBody;
+  }
+
   // 3. Normalize known fields
   req.laxData = {
     phone: normalizePhone(merged.phone),
