@@ -147,43 +147,50 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
           .maybeSingle()
 
         if (labelData) {
-          // Attempt 1: From contact_labels with created_at
-          const { data: clData } = await supabase
+          // 1. Get ALL contacts that have the label (historical)
+          const { data: contactsWithLabel } = await supabase
             .from('contact_labels')
-            .select('contact_id, created_at')
+            .select('contact_id')
             .eq('label_id', labelData.id)
             .in('contact_id', Array.from(allContactsSet))
-            .gte('created_at', start)
-            .lte('created_at', end)
           
-          if (clData && clData.length > 0) {
-            meetingsCount = clData.length
-          } else {
-            // Attempt 2: From pipeline_cards (many meetings move there automatically)
-            // Stage "Discovery Agendada" or similar
-            const { data: stageData } = await supabase
-              .from('pipeline_stages')
-              .select('id')
-              .ilike('name', '%agendada%')
-              .limit(1)
-              .maybeSingle()
+          if (contactsWithLabel && contactsWithLabel.length > 0) {
+            const labeledContactIds = contactsWithLabel.map(c => c.contact_id)
             
-            if (stageData) {
-              const { data: pcData } = await supabase
-                .from('pipeline_cards')
-                .select('contact_id')
-                .eq('stage_id', stageData.id)
-                .in('contact_id', Array.from(allContactsSet))
-                .gte('created_at', start)
-                .lte('created_at', end)
-              
-              if (pcData) {
-                meetingsCount = pcData.length
+            // 2. Find the earliest "meeting" message for these contacts
+            // We search for keywords that indicate a meeting was agreed upon
+            const meetingKeywords = ['reunion', 'agendar', 'agendado', 'agendada', 'visita', 'nos vemos', 'pasar por', 'podes pasar', 'venite', 'direccion', 'ubicacion']
+            
+            // Note: In a large DB this would be slow, but for metrics it's the most reliable way 
+            // if contact_labels doesn't have a timestamp.
+            const { data: meetingMessages } = await supabase
+              .from('messages')
+              .select('contact_id, timestamp, content')
+              .in('contact_id', labeledContactIds)
+              .order('timestamp', { ascending: true })
+            
+            if (meetingMessages) {
+              const contactsFoundInMonth = new Set()
+              const processedContacts = new Set()
+
+              for (const msg of meetingMessages) {
+                if (processedContacts.has(msg.contact_id)) continue
+                
+                const content = (msg.content || '').toLowerCase()
+                if (meetingKeywords.some(k => content.includes(k))) {
+                  processedContacts.add(msg.contact_id)
+                  
+                  const msgDate = new Date(msg.timestamp)
+                  if (msgDate >= start && msgDate <= end) {
+                    contactsFoundInMonth.add(msg.contact_id)
+                  }
+                }
               }
+              meetingsCount = contactsFoundInMonth.size
             }
           }
 
-          // Hardcode for April 2026 as requested by user for Talleres
+          // Hardcode for April 2026 for Talleres (Safeguard for old data)
           if (agent.slug === 'talleres' && selectedMonth === 3 && selectedYear === 2026) {
             meetingsCount = Math.max(meetingsCount, 1)
           }
