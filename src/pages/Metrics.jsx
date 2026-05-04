@@ -96,8 +96,8 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
         .select('contact_id')
         .eq('agent_id', agent.id)
         .eq('direction', 'inbound')
-        .gte('created_at', start)
-        .lte('created_at', end)
+        .gte('timestamp', start)
+        .lte('timestamp', end)
       
       const repliedSet = new Set(repliedData?.map(m => m.contact_id) || [])
       const repliedCount = repliedSet.size
@@ -108,8 +108,8 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
         .select('contact_id')
         .eq('agent_id', agent.id)
         .eq('direction', 'outbound')
-        .gte('created_at', start)
-        .lte('created_at', end)
+        .gte('timestamp', start)
+        .lte('timestamp', end)
       
       const messagedSet = new Set(messagedData?.map(m => m.contact_id) || [])
       // Calculate properly intersected values
@@ -130,8 +130,8 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
         .from('messages')
         .select('contact_id')
         .eq('agent_id', agent.id)
-        .gte('created_at', start)
-        .lte('created_at', end)
+        .gte('timestamp', start)
+        .lte('timestamp', end)
       
       if (allAgentContacts) {
         allAgentContacts.forEach(m => allContactsSet.add(m.contact_id))
@@ -227,8 +227,8 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
       .eq('agent_id', agent.id)
       .eq('direction', 'outbound')
       .ilike('content', `%${videoUrl}%`)
-      .gte('created_at', start)
-      .lte('created_at', end)
+      .gte('timestamp', start)
+      .lte('timestamp', end)
 
     if (!error) {
       setVideoLinkCount(count || 0)
