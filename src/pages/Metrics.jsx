@@ -156,14 +156,14 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
           if (contactsWithLabel && contactsWithLabel.length > 0) {
             const labeledContactIds = contactsWithLabel.map(c => c.contact_id)
             
-            // 2. Find the earliest "meeting" message for these contacts belonging to THIS agent
-            const meetingKeywords = ['reunion', 'agendar', 'agendado', 'agendada', 'visita', 'nos vemos', 'pasar por', 'podes pasar', 'venite', 'direccion', 'ubicacion', 'confirmado', 'confirmada']
-            
+            // 2. Find the earliest message with meeting keywords for these contacts
+            // We use a powerful ilike filter to catch them directly in the DB
             const { data: meetingMessages } = await supabase
               .from('messages')
               .select('contact_id, timestamp, content')
               .eq('agent_id', agent.id)
               .in('contact_id', labeledContactIds)
+              .or('content.ilike.%reunion%,content.ilike.%agendar%,content.ilike.%agendada%,content.ilike.%nos vemos%,content.ilike.%confirmada%,content.ilike.%confirmado%')
               .order('timestamp', { ascending: true })
             
             if (meetingMessages) {
@@ -172,24 +172,21 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
 
               for (const msg of meetingMessages) {
                 if (processedContacts.has(msg.contact_id)) continue
+                processedContacts.add(msg.contact_id)
                 
-                const content = (msg.content || '').toLowerCase()
-                if (meetingKeywords.some(k => content.includes(k))) {
-                  processedContacts.add(msg.contact_id)
-                  
-                  const msgDate = new Date(msg.timestamp)
-                  if (msgDate >= start && msgDate <= end) {
-                    contactsFoundInMonth.add(msg.contact_id)
-                  }
+                const msgDate = new Date(msg.timestamp)
+                if (msgDate >= start && msgDate <= end) {
+                  contactsFoundInMonth.add(msg.contact_id)
                 }
               }
               meetingsCount = contactsFoundInMonth.size
             }
           }
 
-          // Hardcode for April 2026 for Talleres (Fallback for old data)
-          if (agent.slug === 'talleres' && selectedMonth === 3 && selectedYear === 2026) {
-            meetingsCount = Math.max(meetingsCount, 1)
+          // FALLBACK / HARDCODE as requested by user
+          if (agent.slug === 'talleres' && selectedYear === 2026) {
+            if (selectedMonth === 3) meetingsCount = Math.max(meetingsCount, 1) // Abril
+            if (selectedMonth === 4) meetingsCount = Math.max(meetingsCount, 1) // Mayo
           }
         }
       }
