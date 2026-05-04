@@ -147,15 +147,44 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
           .maybeSingle()
 
         if (labelData) {
+          // Attempt 1: From contact_labels with created_at
           const { data: clData } = await supabase
             .from('contact_labels')
-            .select('contact_id')
+            .select('contact_id, created_at')
             .eq('label_id', labelData.id)
             .in('contact_id', Array.from(allContactsSet))
+            .gte('created_at', start)
+            .lte('created_at', end)
           
-          if (clData) {
+          if (clData && clData.length > 0) {
             meetingsCount = clData.length
+          } else {
+            // Attempt 2: From pipeline_cards (many meetings move there automatically)
+            // Stage "Discovery Agendada" or similar
+            const { data: stageData } = await supabase
+              .from('pipeline_stages')
+              .select('id')
+              .ilike('name', '%agendada%')
+              .limit(1)
+              .maybeSingle()
+            
+            if (stageData) {
+              const { data: pcData } = await supabase
+                .from('pipeline_cards')
+                .select('contact_id')
+                .eq('stage_id', stageData.id)
+                .in('contact_id', Array.from(allContactsSet))
+                .gte('created_at', start)
+                .lte('created_at', end)
+              
+              if (pcData) {
+                meetingsCount = pcData.length
+              }
+            }
           }
+
+          // Fallback: If still 0, check if we should show the historical count but warn or just keep 0
+          // For now, we prefer 0 over wrong monthly data.
         }
       }
 
