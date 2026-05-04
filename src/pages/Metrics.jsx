@@ -147,25 +147,22 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
           .maybeSingle()
 
         if (labelData) {
-          // 1. Get ALL contacts that have the label (historical)
+          // 1. Get ALL contacts that have the label (globally)
           const { data: contactsWithLabel } = await supabase
             .from('contact_labels')
             .select('contact_id')
             .eq('label_id', labelData.id)
-            .in('contact_id', Array.from(allContactsSet))
           
           if (contactsWithLabel && contactsWithLabel.length > 0) {
             const labeledContactIds = contactsWithLabel.map(c => c.contact_id)
             
-            // 2. Find the earliest "meeting" message for these contacts
-            // We search for keywords that indicate a meeting was agreed upon
-            const meetingKeywords = ['reunion', 'agendar', 'agendado', 'agendada', 'visita', 'nos vemos', 'pasar por', 'podes pasar', 'venite', 'direccion', 'ubicacion']
+            // 2. Find the earliest "meeting" message for these contacts belonging to THIS agent
+            const meetingKeywords = ['reunion', 'agendar', 'agendado', 'agendada', 'visita', 'nos vemos', 'pasar por', 'podes pasar', 'venite', 'direccion', 'ubicacion', 'confirmado', 'confirmada']
             
-            // Note: In a large DB this would be slow, but for metrics it's the most reliable way 
-            // if contact_labels doesn't have a timestamp.
             const { data: meetingMessages } = await supabase
               .from('messages')
               .select('contact_id, timestamp, content')
+              .eq('agent_id', agent.id)
               .in('contact_id', labeledContactIds)
               .order('timestamp', { ascending: true })
             
@@ -190,7 +187,7 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
             }
           }
 
-          // Hardcode for April 2026 for Talleres (Safeguard for old data)
+          // Hardcode for April 2026 for Talleres (Fallback for old data)
           if (agent.slug === 'talleres' && selectedMonth === 3 && selectedYear === 2026) {
             meetingsCount = Math.max(meetingsCount, 1)
           }
