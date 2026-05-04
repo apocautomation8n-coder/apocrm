@@ -157,7 +157,20 @@ router.post('/inbound', async (req, res) => {
       
       if (!existing) {
         await supabase.from('contact_labels').insert({ contact_id: contactId, label_id: labelId })
-        console.log(`[AUTOMATION] Applied label ${labelId} to contact ${contactId}`)
+        
+        // Log system event for metrics
+        const { data: label } = await supabase.from('labels').select('name').eq('id', labelId).maybeSingle()
+        if (label) {
+          await supabase.from('messages').insert({
+            agent_id: agent.id,
+            contact_id: contactId,
+            direction: 'outbound',
+            content: `[SISTEMA] Etiqueta añadida: ${label.name}`,
+            media_type: 'text',
+            is_read: true,
+            timestamp: new Date().toISOString()
+          })
+        }
       }
     }
 
@@ -311,6 +324,17 @@ router.post('/bot-outbound', async (req, res) => {
             contact_id: contact.id,
             label_id: lb.id
           }, { onConflict: 'contact_id,label_id' })
+
+          // Log system event for metrics
+          await supabase.from('messages').insert({
+            agent_id: agent.id,
+            contact_id: contact.id,
+            direction: 'outbound',
+            content: `[SISTEMA] Etiqueta añadida: Reunion Agendada`,
+            media_type: 'text',
+            is_read: true,
+            timestamp: new Date().toISOString()
+          })
         }
 
         // Pipeline Move

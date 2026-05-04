@@ -4,7 +4,7 @@ import { useLabels, addLabelToContact, removeLabelFromContact } from '../../hook
 import { useRef, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
-export default function ContactPanel({ contact, onClose, onToggleBot }) {
+export default function ContactPanel({ contact, onClose, onToggleBot, agentId }) {
   const { labels: allLabels } = useLabels()
   const [isAddingLabel, setIsAddingLabel] = useState(false)
   const dropdownRef = useRef(null)
@@ -101,7 +101,7 @@ export default function ContactPanel({ contact, onClose, onToggleBot }) {
                         <button
                           key={label.id}
                           onClick={async () => {
-                            const { error } = await addLabelToContact(contact.id, label.id)
+                            const { error } = await addLabelToContact(contact.id, label.id, agentId)
                             if (error) toast.error('Error al asignar')
                             setIsAddingLabel(false)
                           }}
@@ -132,7 +132,7 @@ export default function ContactPanel({ contact, onClose, onToggleBot }) {
                 {label.name}
                 <button
                   onClick={async () => {
-                    const { error } = await removeLabelFromContact(contact.id, label.id)
+                    const { error } = await removeLabelFromContact(contact.id, label.id, agentId)
                     if (error) toast.error('Error al quitar')
                   }}
                   className="p-0.5 rounded-full hover:bg-black/20 transition-colors"

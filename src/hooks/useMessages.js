@@ -440,19 +440,49 @@ export function useLabels() {
   return { labels, loading, refetch: fetchLabels, addLabel, deleteLabel }
 }
 
-export async function addLabelToContact(contactId, labelId) {
+export async function addLabelToContact(contactId, labelId, agentId = null) {
   const { error } = await supabase
     .from('contact_labels')
     .insert({ contact_id: contactId, label_id: labelId })
+  
+  if (!error && agentId) {
+    const { data: label } = await supabase.from('labels').select('name').eq('id', labelId).maybeSingle()
+    if (label) {
+      await supabase.from('messages').insert({
+        agent_id: agentId,
+        contact_id: contactId,
+        direction: 'outbound',
+        content: `[SISTEMA] Etiqueta añadida: ${label.name}`,
+        media_type: 'text',
+        is_read: true,
+        timestamp: new Date().toISOString(),
+      })
+    }
+  }
   return { error }
 }
 
-export async function removeLabelFromContact(contactId, labelId) {
+export async function removeLabelFromContact(contactId, labelId, agentId = null) {
   const { error } = await supabase
     .from('contact_labels')
     .delete()
     .eq('contact_id', contactId)
     .eq('label_id', labelId)
+  
+  if (!error && agentId) {
+    const { data: label } = await supabase.from('labels').select('name').eq('id', labelId).maybeSingle()
+    if (label) {
+      await supabase.from('messages').insert({
+        agent_id: agentId,
+        contact_id: contactId,
+        direction: 'outbound',
+        content: `[SISTEMA] Etiqueta quitada: ${label.name}`,
+        media_type: 'text',
+        is_read: true,
+        timestamp: new Date().toISOString(),
+      })
+    }
+  }
   return { error }
 }
 

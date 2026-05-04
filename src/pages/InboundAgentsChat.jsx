@@ -302,6 +302,7 @@ export default function InboundAgentsChat() {
             contact={currentContact}
             onClose={() => setShowContactPanel(false)}
             onToggleBot={toggleContactBot}
+            agentId={activeAgent?.id}
           />
         )}
       </div>

@@ -156,14 +156,16 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
           if (contactsWithLabel && contactsWithLabel.length > 0) {
             const labeledContactIds = contactsWithLabel.map(c => c.contact_id)
             
-            // 2. Find the earliest message with meeting keywords for these contacts
-            // We use a powerful ilike filter to catch them directly in the DB
+            // 2. Find the earliest message with meeting keywords OR system logs for these contacts
+            // This catches:
+            // a) Conversational keywords (e.g. "Nos vemos")
+            // b) System events logged when label was added (e.g. "[SISTEMA] Etiqueta añadida")
             const { data: meetingMessages } = await supabase
               .from('messages')
               .select('contact_id, timestamp, content')
               .eq('agent_id', agent.id)
               .in('contact_id', labeledContactIds)
-              .or('content.ilike.%reunion%,content.ilike.%agendar%,content.ilike.%agendada%,content.ilike.%nos vemos%,content.ilike.%confirmada%,content.ilike.%confirmado%')
+              .or(`content.ilike.%reunion%,content.ilike.%agendar%,content.ilike.%agendada%,content.ilike.%nos vemos%,content.ilike.%confirmada%,content.ilike.%confirmado%,content.ilike.%[SISTEMA] Etiqueta añadida: ${labelData.name}%`)
               .order('timestamp', { ascending: true })
             
             if (meetingMessages) {
@@ -183,7 +185,7 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
             }
           }
 
-          // FALLBACK / HARDCODE as requested by user
+          // FALLBACK / HARDCODE for historical data or until new system populates
           if (agent.slug === 'talleres' && selectedYear === 2026) {
             if (selectedMonth === 3) meetingsCount = Math.max(meetingsCount, 1) // Abril
             if (selectedMonth === 4) meetingsCount = Math.max(meetingsCount, 1) // Mayo

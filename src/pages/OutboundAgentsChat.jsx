@@ -335,6 +335,7 @@ export default function OutboundAgents() {
             contact={currentContact}
             onClose={() => setShowContactPanel(false)}
             onToggleBot={toggleContactBot}
+            agentId={activeAgent?.id}
           />
         )}
       </div>
