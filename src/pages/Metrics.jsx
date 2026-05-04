@@ -183,8 +183,10 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
             }
           }
 
-          // Fallback: If still 0, check if we should show the historical count but warn or just keep 0
-          // For now, we prefer 0 over wrong monthly data.
+          // Hardcode for April 2026 as requested by user for Talleres
+          if (agent.slug === 'talleres' && selectedMonth === 3 && selectedYear === 2026) {
+            meetingsCount = Math.max(meetingsCount, 1)
+          }
         }
       }
 
