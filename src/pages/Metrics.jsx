@@ -142,7 +142,7 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
         const { data: labelData } = await supabase
           .from('labels')
           .select('id')
-          .ilike('name', '%reunion agendada%')
+          .ilike('name', '%reuni%agendada%')
           .limit(1)
           .maybeSingle()
 
