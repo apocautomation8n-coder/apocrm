@@ -152,8 +152,6 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
             .select('contact_id')
             .eq('label_id', labelData.id)
             .in('contact_id', Array.from(allContactsSet))
-            .gte('created_at', start)
-            .lte('created_at', end)
           
           if (clData) {
             meetingsCount = clData.length
