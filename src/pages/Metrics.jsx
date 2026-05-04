@@ -124,14 +124,12 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
         }
       })
 
-      // All contacts of this agent (both inbound and outbound)
+      // All contacts of this agent (both inbound and outbound) - get ALL of them to catch labels added any time
       let allContactsSet = new Set()
       const { data: allAgentContacts } = await supabase
         .from('messages')
         .select('contact_id')
         .eq('agent_id', agent.id)
-        .gte('timestamp', start)
-        .lte('timestamp', end)
       
       if (allAgentContacts) {
         allAgentContacts.forEach(m => allContactsSet.add(m.contact_id))
