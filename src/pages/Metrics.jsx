@@ -34,6 +34,23 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
 
   const [videoLinkCount, setVideoLinkCount] = useState(0)
 
+  // Date Filtering State
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+
+  const months = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ]
+  
+  const years = [2024, 2025, 2026, 2027]
+
+  const getDateRange = () => {
+    const start = new Date(selectedYear, selectedMonth, 1).toISOString()
+    const end = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59).toISOString()
+    return { start, end }
+  }
+
   // YouTube links per agent slug
   const AGENT_VIDEO_LINKS = {
     talleres: 'youtube.com/watch?v=i93Yyv8REjg',
@@ -71,12 +88,16 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
       const agent = agents.find(a => a.slug === agentSlug)
       if (!agent) return
 
+      const { start, end } = getDateRange()
+
       // Responded (contacts with inbound messages)
       const { data: repliedData } = await supabase
         .from('messages')
         .select('contact_id')
         .eq('agent_id', agent.id)
         .eq('direction', 'inbound')
+        .gte('created_at', start)
+        .lte('created_at', end)
       
       const repliedSet = new Set(repliedData?.map(m => m.contact_id) || [])
       const repliedCount = repliedSet.size
@@ -87,6 +108,8 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
         .select('contact_id')
         .eq('agent_id', agent.id)
         .eq('direction', 'outbound')
+        .gte('created_at', start)
+        .lte('created_at', end)
       
       const messagedSet = new Set(messagedData?.map(m => m.contact_id) || [])
       // Calculate properly intersected values
@@ -107,6 +130,8 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
         .from('messages')
         .select('contact_id')
         .eq('agent_id', agent.id)
+        .gte('created_at', start)
+        .lte('created_at', end)
       
       if (allAgentContacts) {
         allAgentContacts.forEach(m => allContactsSet.add(m.contact_id))
@@ -129,6 +154,8 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
             .select('contact_id')
             .eq('label_id', labelData.id)
             .in('contact_id', Array.from(allContactsSet))
+            .gte('created_at', start)
+            .lte('created_at', end)
           
           if (clData) {
             meetingsCount = clData.length
@@ -157,11 +184,15 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
     const agent = agents.find(a => a.slug === agentSlug)
     if (!agent) return
 
+    const { start, end } = getDateRange()
+
     const { data } = await supabase
       .from('follow_ups')
       .select('status, type')
       .eq('agent_id', agent.id)
       .in('status', ['followed_up', 'responded'])
+      .gte('created_at', start)
+      .lte('created_at', end)
 
     if (data) {
       // Type Default (Seguimientos 1)
@@ -188,12 +219,16 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
       return
     }
 
+    const { start, end } = getDateRange()
+
     const { count, error } = await supabase
       .from('messages')
       .select('*', { count: 'exact', head: true })
       .eq('agent_id', agent.id)
       .eq('direction', 'outbound')
       .ilike('content', `%${videoUrl}%`)
+      .gte('created_at', start)
+      .lte('created_at', end)
 
     if (!error) {
       setVideoLinkCount(count || 0)
@@ -233,7 +268,7 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
       fetchVideoLinkCount(activeAgent)
       setIsEditing(false)
     }
-  }, [activeAgent, agents])
+  }, [activeAgent, agents, selectedMonth, selectedYear])
 
   const handleSave = async () => {
     if (!dbAgent?.id) return
@@ -294,13 +329,41 @@ export default function Metrics({ hideHeader = false, agentType = 'outbound' }) 
         </div>
       </div>
       )}
-      {/* Agent selector */}
-      <Tabs 
-        tabs={agents.map(a => ({ value: a.slug, label: a.name }))} 
-        activeTab={activeAgent} 
-        onChange={setActiveAgent} 
-        className="max-w-md" 
-      />
+      <div className="flex flex-col md:flex-row md:items-center gap-4 justify-between">
+        <Tabs 
+          tabs={agents.map(a => ({ value: a.slug, label: a.name }))} 
+          activeTab={activeAgent} 
+          onChange={setActiveAgent} 
+          className="max-w-md" 
+        />
+
+        <div className="flex items-center gap-1 bg-surface-900/50 p-1 rounded-xl border border-surface-800/60 shadow-inner">
+          <div className="flex items-center gap-2 px-3 py-1.5">
+            <CalendarDays size={14} className="text-primary-400" />
+            <select 
+              value={selectedMonth} 
+              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+              className="bg-transparent border-none text-sm font-semibold text-surface-200 focus:ring-0 cursor-pointer hover:text-primary-400 transition-colors outline-none"
+            >
+              {months.map((m, i) => (
+                <option key={m} value={i} className="bg-surface-900 text-surface-200">{m}</option>
+              ))}
+            </select>
+          </div>
+          <div className="w-px h-4 bg-surface-700/50" />
+          <div className="flex items-center px-3 py-1.5">
+            <select 
+              value={selectedYear} 
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="bg-transparent border-none text-sm font-semibold text-surface-200 focus:ring-0 cursor-pointer hover:text-primary-400 transition-colors outline-none"
+            >
+              {years.map(y => (
+                <option key={y} value={y} className="bg-surface-900 text-surface-200">{y}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
 
       {/* KPI Cards */}
       {loading && !isEditing ? (
