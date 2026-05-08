@@ -1,7 +1,7 @@
 import pg from 'pg'
-import dotenv from 'dotenv'
-
-dotenv.config()
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
 const PROJECT_REF = 'kckmipvuvdbfsflxzynf'
 const DB_PASSWORD = 'ulIB78QjiaIrfGKC'
@@ -11,49 +11,25 @@ const config = {
   ssl: { rejectUnauthorized: false }
 }
 
-const SQL = `
--- Create table for folders
-CREATE TABLE IF NOT EXISTS public.resource_folders (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  name text NOT NULL,
-  parent_id uuid REFERENCES public.resource_folders(id) ON DELETE CASCADE,
-  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
-);
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const sqlPath = path.resolve(__dirname, '../supabase/migration_budgets.sql')
 
--- Create table for files and notes
-CREATE TABLE IF NOT EXISTS public.resource_files (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  folder_id uuid REFERENCES public.resource_folders(id) ON DELETE CASCADE,
-  name text NOT NULL,
-  type text NOT NULL, -- 'image', 'document', 'note'
-  url text,
-  content text,
-  size bigint,
-  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
--- Create bucket for resources
-INSERT INTO storage.buckets (id, name, public) 
-VALUES ('resources', 'resources', true)
-ON CONFLICT (id) DO NOTHING;
-
--- Policies for public bucket access (since buckets is system table, doing simple inserts for policies might fail if they exist or if it's protected, but let's try the storage objects table)
--- Supabase manages storage policies via auth. 
--- We will try to create basic policies for the public schema.
-`
-
-async function main() {
+async function run() {
   const client = new pg.Client(config)
+
   try {
     await client.connect()
     console.log('✅ Connected to database.')
-    await client.query(SQL)
+
+    const sql = fs.readFileSync(sqlPath, 'utf8')
+    await client.query(sql)
     console.log('✅ Migration SQL executed successfully.')
+
   } catch (err) {
-    console.error('❌ Error running migration:', err)
+    console.error('❌ Error executing migration:', err)
   } finally {
     await client.end()
   }
 }
 
-main()
+run()

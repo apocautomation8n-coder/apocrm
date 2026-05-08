@@ -3,6 +3,7 @@ import Tabs from '../components/ui/Tabs'
 import PortfolioProjects from './PortfolioProjects'
 import ResourceDrive from './ResourceDrive'
 import AutomationManager from '../components/resources/AutomationManager'
+import Budgets from '../components/resources/Budgets'
 
 export default function Resources() {
   const [activeTab, setActiveTab] = useState('drive')
@@ -23,7 +24,8 @@ export default function Resources() {
           tabs={[
             { value: 'drive', label: 'Archivos & Documentos' },
             { value: 'portfolio', label: 'Portafolio' },
-            { value: 'automation', label: 'Automatizaciones' }
+            { value: 'automation', label: 'Automatizaciones' },
+            { value: 'budgets', label: 'Presupuestos' }
           ]}
           activeTab={activeTab}
           onChange={setActiveTab}
@@ -34,6 +36,7 @@ export default function Resources() {
         {activeTab === 'drive' && <ResourceDrive />}
         {activeTab === 'portfolio' && <PortfolioProjects hideHeader={true} />}
         {activeTab === 'automation' && <AutomationManager />}
+        {activeTab === 'budgets' && <Budgets />}
       </div>
     </div>
   )

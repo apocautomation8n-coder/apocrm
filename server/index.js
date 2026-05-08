@@ -7,6 +7,7 @@ import sheetsRouter from './routes/sheets.js'
 import calendarRouter from './routes/calendar.js'
 import contactsRouter from './routes/contacts.js'
 import usersRouter from './routes/users.js'
+import budgetsRouter from './routes/budgets.js'
 import { ultraParser, sendError } from './utils.js'
 
 
@@ -20,8 +21,22 @@ app.use(cors())
 app.use(express.text({ type: ['application/json', 'text/plain'], limit: '10mb' }))
 app.use(express.json({ limit: '10mb' }))
 
-// Global Robustness Middleware
-app.use(ultraParser)
+// Importante: No aplicar ultraParser de forma global a /api/budgets porque destruye el payload JSON estándar.
+// Lo aplicamos condicionalmente solo si NO es la ruta de presupuestos
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/budgets')) {
+    // Si el body viene como string por express.text, lo parseamos
+    if (typeof req.body === 'string' && req.body.trim()) {
+      try {
+        req.body = JSON.parse(req.body);
+      } catch (e) {
+        // ignora si no es JSON válido
+      }
+    }
+    return next();
+  }
+  return ultraParser(req, res, next);
+})
 
 // Routes
 app.use('/api/messages', messagesRouter)
@@ -30,6 +45,7 @@ app.use('/api/sheets', sheetsRouter)
 app.use('/api/calendar', calendarRouter)
 app.use('/api/contacts', contactsRouter)
 app.use('/api/users', usersRouter)
+app.use('/api/budgets', budgetsRouter)
 
 
 // Health check
