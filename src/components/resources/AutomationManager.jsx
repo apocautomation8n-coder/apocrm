@@ -14,20 +14,24 @@ export default function AutomationManager() {
   
   // Finance Automations
   const [financeRules, setFinanceRules] = useState([])
+  const [accounts, setAccounts] = useState([])
   const [addingFinance, setAddingFinance] = useState(false)
   const [newFinanceRule, setNewFinanceRule] = useState({
     name: '',
     percentage: '',
     destination_description: '',
-    trigger_type: 'ingreso'
+    trigger_type: 'ingreso',
+    destination_bank_account_id: '',
+    source_bank_account_id: ''
   })
 
   const fetchData = async () => {
     setLoading(true)
-    const [rulesRes, labelsRes, financeRes] = await Promise.all([
+    const [rulesRes, labelsRes, financeRes, accountsRes] = await Promise.all([
       supabase.from('automation_rules').select('*, labels(name, color)').order('created_at'),
       supabase.from('labels').select('*').order('name'),
-      supabase.from('finance_automations').select('*').order('created_at')
+      supabase.from('finance_automations').select('*').order('created_at'),
+      supabase.from('bank_accounts').select('*').order('name')
     ])
 
     if (rulesRes.error) {
@@ -54,6 +58,12 @@ export default function AutomationManager() {
        // Table might not exist yet
     } else {
       setFinanceRules(financeRes.data || [])
+    }
+
+    if (accountsRes.error) {
+      toast.error('Error cargando cuentas')
+    } else {
+      setAccounts(accountsRes.data || [])
     }
     setLoading(false)
   }
@@ -119,18 +129,33 @@ export default function AutomationManager() {
       return toast.error('Completa todos los campos')
     }
 
+    if (addingFinance) return // Prevent multiple clicks
     setAddingFinance(true)
+    
+    const payload = {
+      ...newFinanceRule,
+      percentage: parseFloat(newFinanceRule.percentage),
+      destination_bank_account_id: newFinanceRule.destination_bank_account_id || null,
+      source_bank_account_id: newFinanceRule.source_bank_account_id || null
+    }
+
     const { error } = await supabase
       .from('finance_automations')
-      .insert({
-        ...newFinanceRule,
-        percentage: parseFloat(newFinanceRule.percentage)
-      })
+      .insert(payload)
 
-    if (error) toast.error('Error al crear regla de finanzas')
-    else {
+    if (error) {
+      console.error(error)
+      toast.error('Error al crear regla de finanzas')
+    } else {
       toast.success('Regla de finanzas creada')
-      setNewFinanceRule({ name: '', percentage: '', destination_description: '', trigger_type: 'ingreso' })
+      setNewFinanceRule({ 
+        name: '', 
+        percentage: '', 
+        destination_description: '', 
+        trigger_type: 'ingreso',
+        destination_bank_account_id: '',
+        source_bank_account_id: ''
+      })
       fetchData()
     }
     setAddingFinance(false)
@@ -196,13 +221,39 @@ export default function AutomationManager() {
           <Zap size={20} className="text-emerald-400" />
           Automatización de Finanzas (Gastos Automáticos)
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
           <Input
             label="Nombre de la regla"
             placeholder="ej: Diezmo, Ofrenda..."
             value={newFinanceRule.name}
             onChange={e => setNewFinanceRule({ ...newFinanceRule, name: e.target.value })}
           />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-surface-300">Trigger (Cuándo ocurre)</label>
+            <select
+              value={newFinanceRule.trigger_type}
+              onChange={e => setNewFinanceRule({ ...newFinanceRule, trigger_type: e.target.value })}
+              className="w-full px-3 py-2 text-sm rounded-lg bg-surface-800/60 border border-surface-700/30 text-surface-200 focus:outline-none focus:ring-1 focus:ring-primary-500/40"
+            >
+              <option value="ingreso">Al registrar un Ingreso</option>
+              <option value="egreso" disabled>Al registrar un Egreso (Próximamente)</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-surface-300">Cuenta Origen (Opcional)</label>
+            <select
+              value={newFinanceRule.source_bank_account_id}
+              onChange={e => setNewFinanceRule({ ...newFinanceRule, source_bank_account_id: e.target.value })}
+              className="w-full px-3 py-2 text-sm rounded-lg bg-surface-800/60 border border-surface-700/30 text-surface-200 focus:outline-none focus:ring-1 focus:ring-primary-500/40"
+            >
+              <option value="">Cualquier cuenta</option>
+              {accounts.map(a => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
           <Input
             label="Porcentaje (%)"
             type="number"
@@ -216,14 +267,27 @@ export default function AutomationManager() {
             value={newFinanceRule.destination_description}
             onChange={e => setNewFinanceRule({ ...newFinanceRule, destination_description: e.target.value })}
           />
-          <Button onClick={handleAddFinanceRule} loading={addingFinance} className="w-full">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-surface-300">¿Mover a otra cuenta? (Opcional)</label>
+            <select
+              value={newFinanceRule.destination_bank_account_id}
+              onChange={e => setNewFinanceRule({ ...newFinanceRule, destination_bank_account_id: e.target.value })}
+              className="w-full px-3 py-2 text-sm rounded-lg bg-surface-800/60 border border-surface-700/30 text-surface-200 focus:outline-none focus:ring-1 focus:ring-primary-500/40"
+            >
+              <option value="">Solo registrar gasto</option>
+              {accounts.map(a => (
+                <option key={a.id} value={a.id}>Transferir a: {a.name}</option>
+              ))}
+            </select>
+          </div>
+          <Button onClick={handleAddFinanceRule} loading={addingFinance} className="w-full" disabled={addingFinance}>
             <Plus size={18} />
             Configurar
           </Button>
         </div>
         <p className="text-[11px] text-surface-500 mt-3 flex items-center gap-1">
           <AlertCircle size={12} />
-          Se ejecutará cada vez que registres un ingreso de dinero en una cuenta.
+          Se ejecutará automáticamente según las condiciones definidas arriba.
         </p>
       </div>
 
@@ -235,23 +299,37 @@ export default function AutomationManager() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-surface-800/60 bg-surface-900/40">
-                <th className="px-6 py-4 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Regla</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Porcentaje</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Concepto de Egreso</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Regla / Condición</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Monto</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Acción Automática</th>
                 <th className="px-6 py-4 text-right text-xs font-medium text-surface-400 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-800/40">
-              {financeRules.map(rule => (
+              {financeRules.map(rule => {
+                const sourceAcc = accounts.find(a => a.id === rule.source_bank_account_id)
+                const destAcc = accounts.find(a => a.id === rule.destination_bank_account_id)
+                
+                return (
                 <tr key={rule.id} className={`hover:bg-surface-800/30 transition-colors ${!rule.is_active ? 'opacity-40' : ''}`}>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
                       <span className="text-surface-200 font-medium">{rule.name}</span>
-                      <span className="text-[11px] text-surface-500">Trigger: Al recibir Ingreso</span>
+                      <span className="text-[11px] text-surface-500 flex items-center gap-1">
+                        Trigger: Al recibir {rule.trigger_type}
+                        {sourceAcc && <span className="text-primary-400">en {sourceAcc.name}</span>}
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 font-mono text-emerald-400 font-bold">{rule.percentage}%</td>
-                  <td className="px-6 py-4 text-surface-400">{rule.destination_description}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className="text-surface-400 text-xs">Crear egreso: "{rule.destination_description}"</span>
+                      {destAcc && (
+                        <span className="text-emerald-500 text-[10px] font-bold">+ Registrar ingreso en: {destAcc.name}</span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button

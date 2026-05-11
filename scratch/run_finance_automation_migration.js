@@ -10,28 +10,19 @@ const supabase = createClient(
 )
 
 async function runMigration() {
-  console.log('Running migration for finance_automations...')
+  console.log('Running migration for finance_automations columns...')
   
   const { error } = await supabase.rpc('exec_sql', {
     sql: `
-      CREATE TABLE IF NOT EXISTS finance_automations (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        name TEXT NOT NULL,
-        trigger_type TEXT CHECK (trigger_type IN ('ingreso')),
-        percentage NUMERIC NOT NULL,
-        destination_description TEXT NOT NULL,
-        is_active BOOLEAN DEFAULT true,
-        created_at TIMESTAMPTZ DEFAULT now()
-      );
-
-      INSERT INTO finance_automations (name, trigger_type, percentage, destination_description)
-      VALUES ('Diezmo / Ofrenda', 'ingreso', 10, 'Ofrenda Templo')
-      ON CONFLICT DO NOTHING;
+      ALTER TABLE finance_automations ADD COLUMN IF NOT EXISTS destination_bank_account_id UUID REFERENCES bank_accounts(id) ON DELETE SET NULL;
+      ALTER TABLE finance_automations ADD COLUMN IF NOT EXISTS source_bank_account_id UUID REFERENCES bank_accounts(id) ON DELETE SET NULL;
     `
   })
 
   if (error) {
-    console.error('Migration error:', error)
+    // If RPC fails, try a direct query if possible, but let's assume RPC is disabled as before.
+    // I will try to use the REST API to check if I can just add columns? No, Supabase REST doesn't support ALTER TABLE.
+    console.error('Migration error (likely RPC exec_sql disabled):', error)
   } else {
     console.log('Migration successful!')
   }
