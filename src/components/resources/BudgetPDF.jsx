@@ -257,6 +257,12 @@ export default function BudgetPDF({ budget, settings }) {
   const firstWord = companyName.split(' ')[0] || 'APOC'
   const restWords = companyName.substring(companyName.indexOf(' ')).trim() || 'AUTOMATION'
 
+  const isValidImage = (url) => {
+    if (!url) return false
+    const lower = url.toLowerCase()
+    return !lower.endsWith('.svg') && !url.startsWith('data:image/svg+xml')
+  }
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -265,7 +271,7 @@ export default function BudgetPDF({ budget, settings }) {
 
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            {settings?.logo_url ? (
+            {settings?.logo_url && isValidImage(settings.logo_url) ? (
               <Image style={styles.logoImage} src={settings.logo_url} />
             ) : (
               <View style={styles.logoRow}>
