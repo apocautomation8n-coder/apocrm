@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { StatCard } from '../components/ui/Card'
-import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, CreditCard, Wallet, Repeat, Briefcase, Calculator, HelpCircle } from 'lucide-react'
+import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, CreditCard, Wallet, Repeat, Briefcase, Calculator, HelpCircle, Filter } from 'lucide-react'
 
 const currencies = [
   { code: 'ARS', symbol: '$', label: 'Pesos (ARS)' },
@@ -16,6 +16,7 @@ export default function FinanceDashboard() {
   const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
   const [rates, setRates] = useState({ usd: 0, eur: 0 })
+  const [filterMonth, setFilterMonth] = useState('2026-04') // Default to April as requested
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -50,6 +51,16 @@ export default function FinanceDashboard() {
   // Active-only expenses
   const activeExpenses = expenses.filter(e => (e.status || 'activo') === 'activo')
 
+  // Derive available months from data
+  const availableMonths = useMemo(() => {
+    const months = new Set()
+    transactions.forEach(t => { if (t.date) months.add(t.date.substring(0, 7)) })
+    activeExpenses.forEach(e => { if (e.date) months.add(e.date.substring(0, 7)) })
+    // Ensure April 2026 is available
+    months.add('2026-04')
+    return Array.from(months).sort().reverse()
+  }, [transactions, activeExpenses])
+
   const { consolidated, groupedData } = useMemo(() => {
     let totalBrutoArs = 0
     let totalNetArs = 0
@@ -75,20 +86,26 @@ export default function FinanceDashboard() {
       const fixedNetProfit = mrr - fixedTotalCosts
 
       // ────── ONE-TIME / PROJECT ──────
-      const projectBudget = transactions
-        .filter(t => (t.currency || 'ARS') === c.code)
+      const filteredTransactions = transactions.filter(t => 
+        (t.currency || 'ARS') === c.code && 
+        (filterMonth === 'all' || (t.date && t.date.startsWith(filterMonth)))
+      )
+
+      const projectBudget = filteredTransactions
         .reduce((s, t) => s + Number(t.budget || 0), 0)
 
-      const projectCollected = transactions
-        .filter(t => (t.currency || 'ARS') === c.code)
+      const projectCollected = filteredTransactions
         .reduce((s, t) => s + Number(t.collected || 0), 0)
 
-      const projectFreelancer = transactions
-        .filter(t => (t.currency || 'ARS') === c.code)
+      const projectFreelancer = filteredTransactions
         .reduce((s, t) => s + Number(t.freelancer_fee || 0), 0)
 
       const oneTimeExpenses = activeExpenses
-        .filter(e => (e.currency || 'USD') === c.code && !e.recurring)
+        .filter(e => 
+          (e.currency || 'USD') === c.code && 
+          !e.recurring &&
+          (filterMonth === 'all' || (e.date && e.date.startsWith(filterMonth)))
+        )
         .reduce((s, e) => s + Number(e.amount || 0), 0)
 
       const onetimeTotalCosts = projectFreelancer + oneTimeExpenses
@@ -126,7 +143,7 @@ export default function FinanceDashboard() {
       groupedData: groups,
       consolidated: { totalBrutoArs, totalNetArs, totalPendingArs }
     }
-  }, [transactions, plans, activeExpenses, accounts, rates])
+  }, [transactions, plans, activeExpenses, accounts, rates, filterMonth])
 
   if (loading) {
     return (
@@ -159,7 +176,23 @@ export default function FinanceDashboard() {
         <div className="flex items-center gap-2 mb-6">
           <Calculator size={20} className="text-primary-400" />
           <h2 className="text-lg font-bold text-surface-50">Resumen Consolidado (Pesos ARS)</h2>
-          <span className="ml-auto text-[10px] text-surface-500 font-mono uppercase tracking-widest bg-surface-800 px-2 py-1 rounded border border-surface-700">Cotización Real-Time</span>
+          
+          <div className="ml-auto flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-surface-900/50 border border-surface-700/50 rounded-lg px-2 py-1">
+              <Filter size={14} className="text-surface-500" />
+              <select 
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
+                className="bg-transparent border-none text-xs text-surface-300 focus:outline-none cursor-pointer font-medium"
+              >
+                <option value="all">Todo el Historial</option>
+                {availableMonths.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <span className="text-[10px] text-surface-500 font-mono uppercase tracking-widest bg-surface-800 px-2 py-1 rounded border border-surface-700">Cotización Real-Time</span>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
