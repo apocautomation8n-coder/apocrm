@@ -9,6 +9,7 @@ import Badge from '../components/ui/Badge'
 import { TrendingUp, Plus, Pencil, Trash2, Filter, Wallet, Building2, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
+import { executeFinanceAutomations } from '../lib/financeAutomations'
 
 const currencies = [
   { code: 'ARS', symbol: '$', label: 'Pesos (ARS)' },
@@ -133,6 +134,9 @@ export default function FinanceIncomes({ hideHeader = false }) {
             }
           }
         }
+        
+        // 3. Execute Automations
+        await executeFinanceAutomations({ ...payload, id: insError ? null : 'new' }) // ID is handled by hook
         
         toast.success('Ingreso registrado y saldos actualizados')
       }

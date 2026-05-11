@@ -8,6 +8,7 @@ import Select from '../components/ui/Select'
 import Badge from '../components/ui/Badge'
 import { CreditCard, Users, TrendingUp, DollarSign, Plus, Pencil, Trash2, CheckCircle, Banknote } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { executeFinanceAutomations } from '../lib/financeAutomations'
 
 const statusColors = { activo: 'green', pausado: 'yellow', cancelado: 'red' }
 const statusLabels = { activo: 'Activo', pausado: 'Pausado', cancelado: 'Cancelado' }
@@ -88,6 +89,9 @@ export default function Plans({ hideHeader = false }) {
          balance: Number(targetAccount.balance || 0) + amount 
       }).eq('id', targetAccount.id)
     }
+
+    // 3. Execute Finance Automations
+    await executeFinanceAutomations(payload)
 
     toast.success('Cobro de mes registrado exitosamente y caja actualizada')
     setShowPayModal(false)

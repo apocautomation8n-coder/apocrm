@@ -9,6 +9,7 @@ import Badge from '../components/ui/Badge'
 import { DollarSign, TrendingUp, TrendingDown, Plus, Pencil, Trash2, Filter, Archive, Power } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import toast from 'react-hot-toast'
+import { executeFinanceAutomations } from '../lib/financeAutomations'
 
 const sections = ['b2b', 'wg', 'eleven', 'otro']
 const currencies = [
@@ -124,6 +125,11 @@ export default function FinanceProjects({ hideHeader = false }) {
       const { error } = await supabase.from('finance_transactions').insert(payload)
       if (error) return toast.error('Error creando transacción')
       toast.success('Transacción creada')
+      
+      // Execute Finance Automations if there's an initial collection
+      if (payload.collected > 0) {
+        await executeFinanceAutomations({ ...payload, id: 'new' })
+      }
     }
 
     setShowModal(false)

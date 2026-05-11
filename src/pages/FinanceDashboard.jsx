@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { StatCard } from '../components/ui/Card'
 import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, CreditCard, Wallet, Repeat, Briefcase, Calculator, HelpCircle, Filter } from 'lucide-react'
+import { format } from 'date-fns'
 
 const currencies = [
   { code: 'ARS', symbol: '$', label: 'Pesos (ARS)' },
@@ -16,7 +17,7 @@ export default function FinanceDashboard() {
   const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
   const [rates, setRates] = useState({ usd: 0, eur: 0 })
-  const [filterMonth, setFilterMonth] = useState('2026-04') // Default to April as requested
+  const [filterMonth, setFilterMonth] = useState(format(new Date(), 'yyyy-MM'))
 
   useEffect(() => {
     const fetchAll = async () => {

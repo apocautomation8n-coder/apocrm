@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import { Plus, Trash2, Zap, AlertCircle, Loader2, Kanban } from 'lucide-react'
+import { Plus, Trash2, Zap, AlertCircle, Loader2, Kanban, DollarSign, Power } from 'lucide-react'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
 import toast from 'react-hot-toast'
@@ -11,12 +11,23 @@ export default function AutomationManager() {
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [newRule, setNewRule] = useState({ keyword: '', label_id: '' })
+  
+  // Finance Automations
+  const [financeRules, setFinanceRules] = useState([])
+  const [addingFinance, setAddingFinance] = useState(false)
+  const [newFinanceRule, setNewFinanceRule] = useState({
+    name: '',
+    percentage: '',
+    destination_description: '',
+    trigger_type: 'ingreso'
+  })
 
   const fetchData = async () => {
     setLoading(true)
-    const [rulesRes, labelsRes] = await Promise.all([
+    const [rulesRes, labelsRes, financeRes] = await Promise.all([
       supabase.from('automation_rules').select('*, labels(name, color)').order('created_at'),
-      supabase.from('labels').select('*').order('name')
+      supabase.from('labels').select('*').order('name'),
+      supabase.from('finance_automations').select('*').order('created_at')
     ])
 
     if (rulesRes.error) {
@@ -37,6 +48,12 @@ export default function AutomationManager() {
       if (labelsRes.data?.length > 0) {
         setNewRule(prev => ({ ...prev, label_id: labelsRes.data[0].id }))
       }
+    }
+
+    if (financeRes.error) {
+       // Table might not exist yet
+    } else {
+      setFinanceRules(financeRes.data || [])
     }
     setLoading(false)
   }
@@ -79,6 +96,51 @@ export default function AutomationManager() {
     if (error) {
       toast.error('Error al eliminar')
     } else {
+      toast.success('Regla eliminada')
+      fetchData()
+    }
+  }
+
+  const handleToggleFinanceRule = async (id, currentStatus) => {
+    const { error } = await supabase
+      .from('finance_automations')
+      .update({ is_active: !currentStatus })
+      .eq('id', id)
+
+    if (error) toast.error('Error al actualizar estado')
+    else {
+      setFinanceRules(prev => prev.map(r => r.id === id ? { ...r, is_active: !currentStatus } : r))
+      toast.success('Estado actualizado')
+    }
+  }
+
+  const handleAddFinanceRule = async () => {
+    if (!newFinanceRule.name || !newFinanceRule.percentage || !newFinanceRule.destination_description) {
+      return toast.error('Completa todos los campos')
+    }
+
+    setAddingFinance(true)
+    const { error } = await supabase
+      .from('finance_automations')
+      .insert({
+        ...newFinanceRule,
+        percentage: parseFloat(newFinanceRule.percentage)
+      })
+
+    if (error) toast.error('Error al crear regla de finanzas')
+    else {
+      toast.success('Regla de finanzas creada')
+      setNewFinanceRule({ name: '', percentage: '', destination_description: '', trigger_type: 'ingreso' })
+      fetchData()
+    }
+    setAddingFinance(false)
+  }
+
+  const handleDeleteFinanceRule = async (id) => {
+    if (!confirm('¿Eliminar esta regla de finanzas?')) return
+    const { error } = await supabase.from('finance_automations').delete().eq('id', id)
+    if (error) toast.error('Error al eliminar')
+    else {
       toast.success('Regla eliminada')
       fetchData()
     }
@@ -128,6 +190,94 @@ export default function AutomationManager() {
           Las reglas no distinguen entre mayúsculas y minúsculas.
         </p>
       </div>
+
+      <div className="bg-surface-900/60 border border-surface-800/60 rounded-2xl p-6">
+        <h3 className="text-lg font-semibold text-surface-100 flex items-center gap-2 mb-4">
+          <Zap size={20} className="text-emerald-400" />
+          Automatización de Finanzas (Gastos Automáticos)
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <Input
+            label="Nombre de la regla"
+            placeholder="ej: Diezmo, Ofrenda..."
+            value={newFinanceRule.name}
+            onChange={e => setNewFinanceRule({ ...newFinanceRule, name: e.target.value })}
+          />
+          <Input
+            label="Porcentaje (%)"
+            type="number"
+            placeholder="10"
+            value={newFinanceRule.percentage}
+            onChange={e => setNewFinanceRule({ ...newFinanceRule, percentage: e.target.value })}
+          />
+          <Input
+            label="Descripción del Egreso"
+            placeholder="ej: Ofrenda Templo"
+            value={newFinanceRule.destination_description}
+            onChange={e => setNewFinanceRule({ ...newFinanceRule, destination_description: e.target.value })}
+          />
+          <Button onClick={handleAddFinanceRule} loading={addingFinance} className="w-full">
+            <Plus size={18} />
+            Configurar
+          </Button>
+        </div>
+        <p className="text-[11px] text-surface-500 mt-3 flex items-center gap-1">
+          <AlertCircle size={12} />
+          Se ejecutará cada vez que registres un ingreso de dinero en una cuenta.
+        </p>
+      </div>
+
+      {financeRules.length > 0 && (
+        <div className="bg-surface-900/80 border border-surface-800/60 rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-surface-800/60 bg-surface-900/40">
+            <h4 className="text-xs font-semibold text-surface-400 uppercase tracking-wider">Reglas de Finanzas Activas</h4>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-surface-800/60 bg-surface-900/40">
+                <th className="px-6 py-4 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Regla</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Porcentaje</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-surface-400 uppercase tracking-wider">Concepto de Egreso</th>
+                <th className="px-6 py-4 text-right text-xs font-medium text-surface-400 uppercase tracking-wider">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-800/40">
+              {financeRules.map(rule => (
+                <tr key={rule.id} className={`hover:bg-surface-800/30 transition-colors ${!rule.is_active ? 'opacity-40' : ''}`}>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className="text-surface-200 font-medium">{rule.name}</span>
+                      <span className="text-[11px] text-surface-500">Trigger: Al recibir Ingreso</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 font-mono text-emerald-400 font-bold">{rule.percentage}%</td>
+                  <td className="px-6 py-4 text-surface-400">{rule.destination_description}</td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleToggleFinanceRule(rule.id, rule.is_active)}
+                        className={`p-2 rounded-lg transition-all ${
+                          rule.is_active ? 'text-emerald-400 bg-emerald-500/10' : 'text-surface-500 hover:text-emerald-400'
+                        }`}
+                        title={rule.is_active ? 'Desactivar' : 'Activar'}
+                      >
+                        <Power size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFinanceRule(rule.id)}
+                        className="p-2 text-surface-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="bg-surface-900/80 border border-surface-800/60 rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-surface-800/60 bg-surface-900/40">
