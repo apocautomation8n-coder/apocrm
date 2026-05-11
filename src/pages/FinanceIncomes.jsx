@@ -6,7 +6,7 @@ import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import Badge from '../components/ui/Badge'
-import { TrendingUp, Plus, Pencil, Trash2, Filter, Wallet, Building2, DollarSign } from 'lucide-react'
+import { TrendingUp, Plus, Pencil, Trash2, Filter, Wallet, Building2, DollarSign, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import { executeFinanceAutomations } from '../lib/financeAutomations'
@@ -29,6 +29,7 @@ export default function FinanceIncomes({ hideHeader = false }) {
   // Filters
   const [filterProject, setFilterProject] = useState('all')
   const [filterAccount, setFilterAccount] = useState('all')
+  const [filterMonth, setFilterMonth] = useState('all')
   
   const [form, setForm] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
@@ -39,6 +40,15 @@ export default function FinanceIncomes({ hideHeader = false }) {
     description: '',
     notes: '',
   })
+
+  // Derive available months from data
+  const availableMonths = useMemo(() => {
+    const months = new Set()
+    incomes.forEach(i => {
+      if (i.date) months.add(i.date.substring(0, 7)) // 'YYYY-MM'
+    })
+    return Array.from(months).sort().reverse()
+  }, [incomes])
 
   const fetchData = async () => {
     setLoading(true)
@@ -76,6 +86,7 @@ export default function FinanceIncomes({ hideHeader = false }) {
   const filtered = incomes.filter(i => {
     if (filterProject !== 'all' && i.project_id !== filterProject) return false
     if (filterAccount !== 'all' && i.bank_account_id !== filterAccount) return false
+    if (filterMonth !== 'all' && i.date && !i.date.startsWith(filterMonth)) return false
     return true
   })
 
@@ -271,6 +282,17 @@ export default function FinanceIncomes({ hideHeader = false }) {
           <option value="all">Todas las cuentas</option>
           {accounts.map(a => (
             <option key={a.id} value={a.id}>{a.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={filterMonth}
+          onChange={(e) => setFilterMonth(e.target.value)}
+          className="px-3 py-1.5 rounded-lg bg-surface-800 border border-surface-700/50 text-surface-200 text-sm focus:outline-none cursor-pointer hover:border-surface-600 transition-colors"
+        >
+          <option value="all">Todos los meses</option>
+          {availableMonths.map(m => (
+            <option key={m} value={m}>{m}</option>
           ))}
         </select>
 

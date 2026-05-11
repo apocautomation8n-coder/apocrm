@@ -17,11 +17,21 @@ export default function Invoices({ hideHeader = false }) {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [filterMonth, setFilterMonth] = useState('all')
   
   const [showSettings, setShowSettings] = useState(false)
   const [showClients, setShowClients] = useState(false)
   
   const [metrics, setMetrics] = useState({ total_issued: 0, pending: 0, paid: 0 })
+
+  // Derive available months from invoices
+  const availableMonths = useMemo(() => {
+    const months = new Set()
+    invoices.forEach(inv => {
+      if (inv.issue_date) months.add(inv.issue_date.substring(0, 7)) // 'YYYY-MM'
+    })
+    return Array.from(months).sort().reverse()
+  }, [invoices])
   
   const navigate = useNavigate()
 
@@ -71,6 +81,7 @@ export default function Invoices({ hideHeader = false }) {
 
   const filtered = invoices.filter(inv => {
     if (statusFilter !== 'all' && inv.status !== statusFilter) return false
+    if (filterMonth !== 'all' && inv.issue_date && !inv.issue_date.startsWith(filterMonth)) return false
     if (!search) return true
     
     const s = search.toLowerCase()
@@ -196,6 +207,17 @@ export default function Invoices({ hideHeader = false }) {
           <option value="emitida">Emitida</option>
           <option value="pagada">Pagada</option>
           <option value="cancelada">Cancelada</option>
+        </select>
+
+        <select
+          value={filterMonth}
+          onChange={(e) => setFilterMonth(e.target.value)}
+          className="bg-surface-800/80 border border-surface-700/50 text-surface-100 text-sm rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#7a9e82]/40 outline-none"
+        >
+          <option value="all">Todos los meses</option>
+          {availableMonths.map(m => (
+            <option key={m} value={m}>{m}</option>
+          ))}
         </select>
       </div>
 
