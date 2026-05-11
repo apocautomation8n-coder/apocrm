@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
@@ -17,6 +17,18 @@ export default function Contacts() {
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({ name: '', phone: '', email: '' })
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Use useMemo to parse search params
+  const querySearch = useMemo(() => {
+    return new URLSearchParams(location.search).get('search') || ''
+  }, [location.search])
+
+  useEffect(() => {
+    if (querySearch) {
+      setSearch(querySearch)
+    }
+  }, [querySearch])
 
   const fetchContacts = async () => {
     setLoading(true)
